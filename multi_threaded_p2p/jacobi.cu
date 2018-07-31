@@ -1,4 +1,4 @@
-/* Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
+/* Copyright (c) 2017-2018, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,6 +31,10 @@
 #include <algorithm>
 
 #include <omp.h>
+
+#ifdef HAVE_CUB
+#include <cub/block/block_reduce.cuh>
+#endif //HAVE_CUB
 
 #ifdef USE_NVTX
 #include <nvToolsExt.h>
@@ -89,6 +93,7 @@ __global__ void initialize_boundaries(
     }
 }
 
+template<int BLOCK_DIM_X, int BLOCK_DIM_Y>
 __global__ void jacobi_kernel(
           real* __restrict__ const a_new,
     const real* __restrict__ const a,
@@ -101,9 +106,14 @@ __global__ void jacobi_kernel(
     const int bottom_iy
     )
 {
-    real local_l2_norm = 0.0;
+#ifdef HAVE_CUB
+    typedef cub::BlockReduce<real,BLOCK_DIM_X,cub::BLOCK_REDUCE_WARP_REDUCTIONS,BLOCK_DIM_Y> BlockReduce;
+    __shared__ typename BlockReduce::TempStorage temp_storage;
+#endif //HAVE_CUB
     int iy = blockIdx.y * blockDim.y + threadIdx.y + iy_start; 
     int ix = blockIdx.x * blockDim.x + threadIdx.x + 1; 
+    real local_l2_norm = 0.0;
+    
     if(iy < iy_end && ix < (nx - 1)) {
         const real new_val = 0.25 * ( a[ iy * nx + ix + 1 ] + a[ iy * nx + ix - 1 ]
                                     + a[ (iy+1) * nx + ix ] + a[ (iy-1) * nx + ix ] );
@@ -122,12 +132,13 @@ __global__ void jacobi_kernel(
         real residue = new_val - a[ iy * nx + ix ];
         local_l2_norm += residue * residue;
     }
-    /*
-     * New in CUDA 9: Thanks to warp-aggregated atomics the compiler optimizes the following
-     * call to a single atomic per warp. This results in a significant speedup compared to
-     * CUDA 8.
-     */
+#ifdef HAVE_CUB
+    real block_l2_norm = BlockReduce(temp_storage).Sum(local_l2_norm);
+    if ( 0 == threadIdx.y && 0 == threadIdx.x )
+        atomicAdd( l2_norm, block_l2_norm );
+#else
     atomicAdd( l2_norm, local_l2_norm );
+#endif //HAVE_CUB
 }
 
 double single_gpu(const int nx, const int ny, const int iter_max, real* const a_ref_h, const int nccheck, const bool print );
@@ -283,8 +294,9 @@ int main(int argc, char * argv[])
                 if (!csv) printf("Jacobi relaxation: %d iterations on %d x %d mesh with norm check every %d iterations\n", iter_max, ny, nx, nccheck);
             }
 
-            dim3 dim_block(32,4,1);
-            dim3 dim_grid((nx - 1)/ dim_block.x + 1, (ny - 1) / (num_devices * dim_block.y) + 1, 1);
+            constexpr int dim_block_x = 32;
+            constexpr int dim_block_y = 4;
+            dim3 dim_grid((nx - 1)/ dim_block_x + 1, (ny - 1) / (num_devices * dim_block_y) + 1, 1);
 
             int iter = 0;
             #pragma omp master
@@ -304,7 +316,7 @@ int main(int argc, char * argv[])
                 #pragma omp barrier
                 CUDA_RT_CALL( cudaStreamWaitEvent( compute_stream, compute_done[iter%2][top], 0 ) );
                 CUDA_RT_CALL( cudaStreamWaitEvent( compute_stream, compute_done[iter%2][bottom], 0 ) );
-                jacobi_kernel<<<dim_grid,dim_block,0,compute_stream>>>( a_new[dev_id], a, l2_norm_d, iy_start, iy_end[dev_id], nx, a_new[top], iy_end[top], a_new[bottom], 0 );
+                jacobi_kernel<dim_block_x,dim_block_y><<<dim_grid,{dim_block_x,dim_block_y,1},0,compute_stream>>>( a_new[dev_id], a, l2_norm_d, iy_start, iy_end[dev_id], nx, a_new[top], iy_end[top], a_new[bottom], 0 );
                 CUDA_RT_CALL( cudaGetLastError() );
                 CUDA_RT_CALL( cudaEventRecord( compute_done[(iter+1)%2][dev_id], compute_stream ) );
                 
@@ -433,8 +445,9 @@ double single_gpu(const int nx, const int ny, const int iter_max, real* const a_
     
     if (print) printf("Single GPU jacobi relaxation: %d iterations on %d x %d mesh with norm check every %d iterations\n", iter_max, ny, nx, nccheck);
 
-    dim3 dim_block(32,4,1);
-    dim3 dim_grid((nx - 1) / dim_block.x + 1, (ny - 1) / dim_block.y + 1, 1);
+    constexpr int dim_block_x = 32;
+    constexpr int dim_block_y = 4;
+    dim3 dim_grid((nx - 1) / dim_block_x + 1, (ny - 1) / dim_block_y + 1, 1);
 
     int iter = 0;
     real l2_norm = 1.0;
@@ -449,7 +462,7 @@ double single_gpu(const int nx, const int ny, const int iter_max, real* const a_
         CUDA_RT_CALL( cudaStreamWaitEvent( compute_stream, push_top_done, 0 ) );
         CUDA_RT_CALL( cudaStreamWaitEvent( compute_stream, push_bottom_done, 0 ) );
         
-        jacobi_kernel<<<dim_grid,dim_block,0,compute_stream>>>( a_new, a, l2_norm_d, iy_start, iy_end, nx, a_new, iy_start, a_new, (iy_end - 1) );
+        jacobi_kernel<dim_block_x,dim_block_y><<<dim_grid,{dim_block_x,dim_block_y,1},0,compute_stream>>>( a_new, a, l2_norm_d, iy_start, iy_end, nx, a_new, iy_start, a_new, (iy_end - 1) );
         CUDA_RT_CALL( cudaGetLastError() );
         CUDA_RT_CALL( cudaEventRecord( compute_done, compute_stream ) );
         

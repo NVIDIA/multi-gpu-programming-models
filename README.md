@@ -12,17 +12,18 @@ This project implements the well known multi GPU Jacobi solver with different mu
 Each variant is a stand alone Makefile project and all variants have been described in the GTC EU 2017 Talk [Multi GPU Programming Models](http://on-demand-gtc.gputechconf.com/gtc-quicklink/4rWBZ)
 
 # Requirements
-* CUDA: Required by all variants. The examples have been developed with CUDA 8 and tested with CUDA 9.1 but except the Unified Memory variant should also work with older CUDA version.
+* CUDA: Required by all variants. The examples have been developed with CUDA 8 and tested with CUDA 9.1 and 9.2 but except the Unified Memory variant should also work with older CUDA version.
 * OpenMP capable compiler: Required by the Multi Threaded variants. The examples have been developed and tested with gcc.
 * CUDA-aware MPI: Required by teh MPI variants. The examples have been developed and tested with OpenMPI.
+* CUB: Optional for optimized residual reductions. Set CUB_HOME to your cub installation directory. The examples have been developed and tested with cub 1.8.0.
 
 # Building 
 Each variant come with a Makefile and can be build by simply issuing make, e.g.
 ```sh
-multi-gpu-programming-models]$ cd multi_threaded_copy
-multi_threaded_copy]$ make
-nvcc -Xcompiler -fopenmp -lineinfo -DUSE_NVTX -lnvToolsExt -gencode arch=compute_35,code=sm_35 -gencode arch=compute_60,code=sm_60 -std=c++11 jacobi.cu -o jacobi
-multi_threaded_copy]$ ls jacobi
+multi-gpu-programming-models$ cd multi_threaded_copy
+multi_threaded_copy$ make CUB_HOME=../cub
+nvcc -DHAVE_CUB -I../cub -Xcompiler -fopenmp -lineinfo -DUSE_NVTX -lnvToolsExt -gencode arch=compute_60,code=sm_60 -gencode arch=compute_70,code=sm_70 -gencode arch=compute_70,code=compute_70  -std=c++11 jacobi.cu -o jacobi
+multi_threaded_copy$ ls jacobi
 jacobi
 ```
 
