@@ -351,12 +351,15 @@ int main(int argc, char * argv[])
                     l2_norms[prev] += *(l2_norm_bufs[prev].h);
                     
                     #pragma omp barrier
-                    l2_norms[prev] = std::sqrt( l2_norms[prev] );
-                    l2_norm_greater_than_tol = ( l2_norms[prev] > tol );
+                    #pragma omp single
+                    {
+                        l2_norms[prev] = std::sqrt( l2_norms[prev] );
+                        l2_norm_greater_than_tol = ( l2_norms[prev] > tol );
+                    }
 
                     #pragma omp barrier
                     if(!csv && (iter % 100) == 0) {
-                        #pragma omp master
+                        #pragma omp single
                         printf("%5d, %0.6f\n", iter, l2_norms[prev]);
                         #pragma omp barrier
                     }
