@@ -12,9 +12,9 @@ This project implements the well known multi GPU Jacobi solver with different mu
 Each variant is a stand alone Makefile project and all variants have been described in the GTC EU 2017 Talk [Multi GPU Programming Models](http://on-demand-gtc.gputechconf.com/gtc-quicklink/4rWBZ)
 
 # Requirements
-* CUDA: Required by all variants. The examples have been developed with CUDA 8 and tested with CUDA 9.1 and 9.2 but except the Unified Memory variant should also work with older CUDA version.
+* CUDA: verison 9.2 or later is required by all variants.
 * OpenMP capable compiler: Required by the Multi Threaded variants. The examples have been developed and tested with gcc.
-* CUDA-aware MPI: Required by teh MPI variants. The examples have been developed and tested with OpenMPI.
+* CUDA-aware MPI: Required by the MPI variants. The examples have been developed and tested with OpenMPI.
 * CUB: Optional for optimized residual reductions. Set CUB_HOME to your cub installation directory. The examples have been developed and tested with cub 1.8.0.
 
 # Building 
