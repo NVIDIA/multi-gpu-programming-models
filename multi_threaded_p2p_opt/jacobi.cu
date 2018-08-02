@@ -207,8 +207,9 @@ int main(int argc, char * argv[])
         int dev_id = omp_get_thread_num();
 
         CUDA_RT_CALL( cudaSetDevice( dev_id ) ); 
+        CUDA_RT_CALL( cudaSetDeviceFlags( cudaDeviceScheduleSpin ) );
         CUDA_RT_CALL( cudaFree( 0 ) );
-        
+
         if ( 0 == dev_id ) {
             CUDA_RT_CALL( cudaMallocHost( &a_ref_h, nx*ny*sizeof(real) ) );
             CUDA_RT_CALL( cudaMallocHost( &a_h, nx*ny*sizeof(real) ) );
@@ -351,27 +352,24 @@ int main(int argc, char * argv[])
                     l2_norms[prev] += *(l2_norm_bufs[prev].h);
                     
                     #pragma omp barrier
-                    #pragma omp single
-                    {
-                        l2_norms[prev] = std::sqrt( l2_norms[prev] );
-                        l2_norm_greater_than_tol = ( l2_norms[prev] > tol );
-                    }
-
-                    #pragma omp barrier
+                    const real l2_norm_prev = std::sqrt( l2_norms[prev] );
+                    l2_norm_greater_than_tol = ( l2_norm_prev > tol );
+                    
                     if(!csv && (iter % 100) == 0) {
                         #pragma omp single
-                        printf("%5d, %0.6f\n", iter, l2_norms[prev]);
-                        #pragma omp barrier
+                        printf("%5d, %0.6f\n", iter, l2_norm_prev);
                     }
+                    #pragma omp barrier
 
                     // reset everything for next iteration
                     l2_norms[prev] = 0.0;
                     *(l2_norm_bufs[prev].h) = 0.0;
                     CUDA_RT_CALL( cudaMemcpyAsync( l2_norm_bufs[prev].d, l2_norm_bufs[curr].h, sizeof(real), cudaMemcpyHostToDevice, reset_l2_norm_stream ) );
                     CUDA_RT_CALL( cudaEventRecord( reset_l2_norm_done[prev][dev_id], reset_l2_norm_stream ) );
+                } else {
+                    #pragma omp barrier
                 }
-                
-                #pragma omp barrier
+
                 std::swap(a_new[dev_id],a);
                 iter++;
             }
