@@ -1,4 +1,4 @@
-# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2017-2018, NVIDIA CORPORATION. All rights reserved.
 NP ?= 1
 NVCC=nvcc
 MPICXX=mpicxx
@@ -10,7 +10,12 @@ GENCODE_SM52	:= -gencode arch=compute_52,code=sm_52
 GENCODE_SM60    := -gencode arch=compute_60,code=sm_60
 GENCODE_SM70    := -gencode arch=compute_70,code=sm_70 -gencode arch=compute_70,code=compute_70 
 GENCODE_FLAGS	:= $(GENCODE_SM60) $(GENCODE_SM70)
-NVCC_FLAGS = -lineinfo $(GENCODE_FLAGS) -std=c++11
+ifdef CUB_HOME
+        NVCC_FLAGS = -DHAVE_CUB -I$(CUB_HOME)
+else
+        NVCC_FLAGS = -Xptxas --optimize-float-atomics
+endif
+NVCC_FLAGS += -lineinfo $(GENCODE_FLAGS) -std=c++11
 MPICXX_FLAGS = -DUSE_NVTX -I$(CUDA_HOME)/include -std=c++11
 LD_FLAGS = -L$(CUDA_HOME)/lib64 -lcudart -lnvToolsExt
 jacobi: Makefile jacobi.cpp jacobi_kernels.o
