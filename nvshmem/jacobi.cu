@@ -284,8 +284,8 @@ int main(int argc, char* argv[]) {
     int iy_end = (iy_end_global - iy_start_global + 1) + iy_start;
 
     // calculate boundary indices for top and bottom boundaries
-    int top = mype > 0 ? mype - 1 : (npes - 1);
-    int bottom = (mype + 1) % npes;
+    int top_pe = mype > 0 ? mype - 1 : (npes - 1);
+    int bottom_pe = (mype + 1) % npes;
 
     int iy_end_top =
         (mype == 0) ? chunk_size - (ny % npes) + 1 : chunk_size + 1;
@@ -368,8 +368,8 @@ int main(int argc, char* argv[]) {
             cudaStreamWaitEvent(compute_stream, reset_l2_norm_done[curr], 0));
         jacobi_kernel<dim_block_x, dim_block_y>
             <<<dim_grid, {dim_block_x, dim_block_y, 1}, 0, compute_stream>>>(
-                a_new, a, l2_norm_bufs[curr].d, iy_start, iy_end, nx, top,
-                iy_end_top, bottom, iy_start_bottom);
+                a_new, a, l2_norm_bufs[curr].d, iy_start, iy_end, nx, top_pe,
+                iy_end_top, bottom_pe, iy_start_bottom);
         CUDA_RT_CALL(cudaGetLastError());
 
         shmemx_barrier_all_on_stream(compute_stream);
