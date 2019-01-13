@@ -210,11 +210,6 @@ int main(int argc, char* argv[]) {
 
     int num_devices;
     CUDA_RT_CALL(cudaGetDeviceCount(&num_devices));
-    if (num_devices < size) {
-        fprintf(stderr, "ERROR: device count < process count!\n");
-        MPI_CALL(MPI_Finalize());
-        return -1;
-    }
 
     int local_rank = -1, local_size = 1;
     {
