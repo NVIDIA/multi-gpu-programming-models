@@ -221,8 +221,9 @@ int main(int argc, char* argv[]) {
 
         MPI_CALL(MPI_Comm_rank(local_comm, &local_rank));
         MPI_CALL(MPI_Comm_size(local_comm, &local_size));
-        if (local_size < size) {
-            fprintf(stderr, "ERROR: this test works only within a node!\n");
+        if (num_devices < local_size) {
+            fprintf(stderr, "ERROR: Number of devices is less numer of PEs \
+                    on the node!\n");
             MPI_CALL(MPI_Comm_free(&local_comm));
             MPI_CALL(MPI_Info_free(&info));
             MPI_CALL(MPI_Finalize());
