@@ -306,7 +306,5 @@ int main(int argc, char* argv[]) {
     CUDA_RT_CALL(cudaFree(a_new));
     CUDA_RT_CALL(cudaFree(a));
 
-    CUDA_RT_CALL(cudaDeviceReset());
-
     return 0;
 }

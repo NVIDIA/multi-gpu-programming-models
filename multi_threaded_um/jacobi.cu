@@ -346,10 +346,6 @@ int main(int argc, char* argv[]) {
 
     CUDA_RT_CALL(cudaFree(a_ref));
 
-    for (int dev_id = 0; dev_id < num_devices; ++dev_id) {
-        CUDA_RT_CALL(cudaSetDevice(dev_id));
-        CUDA_RT_CALL(cudaDeviceReset());
-    }
     return result_correct ? 0 : 1;
 }
 

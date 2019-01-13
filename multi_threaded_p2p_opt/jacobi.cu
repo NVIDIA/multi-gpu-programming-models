@@ -440,7 +440,6 @@ int main(int argc, char* argv[]) {
                 CUDA_RT_CALL(cudaFreeHost(a_ref_h));
             }
         }
-        CUDA_RT_CALL(cudaDeviceReset());
     }
 
     return result_correct ? 0 : 1;
