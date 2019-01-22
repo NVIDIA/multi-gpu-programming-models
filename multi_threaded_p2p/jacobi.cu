@@ -299,8 +299,8 @@ int main(int argc, char* argv[]) {
 
             constexpr int dim_block_x = 32;
             constexpr int dim_block_y = 4;
-            dim3 dim_grid((nx - 1) / dim_block_x + 1,
-                          (ny - 1) / (num_devices * dim_block_y) + 1, 1);
+            dim3 dim_grid((nx + dim_block_x - 1) / dim_block_x,
+                          (ny + (num_devices * dim_block_y) - 1) / (num_devices * dim_block_y), 1);
 
             int iter = 0;
 #pragma omp master
@@ -481,7 +481,7 @@ double single_gpu(const int nx, const int ny, const int iter_max,
 
     constexpr int dim_block_x = 32;
     constexpr int dim_block_y = 4;
-    dim3 dim_grid((nx - 1) / dim_block_x + 1, (ny - 1) / dim_block_y + 1, 1);
+    dim3 dim_grid((nx + dim_block_x - 1) / dim_block_x, (ny + dim_block_y - 1) / dim_block_y, 1);
 
     int iter = 0;
     real l2_norm = 1.0;
