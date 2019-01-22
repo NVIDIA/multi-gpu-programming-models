@@ -36,3 +36,10 @@ All variant have the following command line options
 * `-csv`: Print performance results as -csv
 
 The provided script `bench.sh` contains some examples executing all the benchmarks presented in the GTC EU 2017 Talk Multi GPU Programming Models.
+
+# Developers guide
+The code applies the style guide implemented in [`.clang-format`](.clang-format) file. [`clang-format`](https://clang.llvm.org/docs/ClangFormat.html) version 7 or later should be used to format the code prior to submitting it. E.g. with
+```sh
+multi-gpu-programming-models$ cd multi_threaded_copy
+multi_threaded_copy$ clang-format -style=file -i jacobi.cu
+```
