@@ -32,27 +32,25 @@
 
 #include <mpi.h>
 
-#define MPI_CALL(call)                                                         \
-    {                                                                          \
-        int mpi_status = call;                                                 \
-        if (0 != mpi_status) {                                                 \
-            char mpi_error_string[MPI_MAX_ERROR_STRING];                       \
-            int mpi_error_string_length = 0;                                   \
-            MPI_Error_string(mpi_status, mpi_error_string,                     \
-                             &mpi_error_string_length);                        \
-            if (NULL != mpi_error_string)                                      \
-                fprintf(stderr,                                                \
-                        "ERROR: MPI call \"%s\" in line %d of file %s failed " \
-                        "with %s "                                             \
-                        "(%d).\n",                                             \
-                        #call, __LINE__, __FILE__, mpi_error_string,           \
-                        mpi_status);                                           \
-            else                                                               \
-                fprintf(stderr,                                                \
-                        "ERROR: MPI call \"%s\" in line %d of file %s failed " \
-                        "with %d.\n",                                          \
-                        #call, __LINE__, __FILE__, mpi_status);                \
-        }                                                                      \
+#define MPI_CALL(call)                                                                \
+    {                                                                                 \
+        int mpi_status = call;                                                        \
+        if (0 != mpi_status) {                                                        \
+            char mpi_error_string[MPI_MAX_ERROR_STRING];                              \
+            int mpi_error_string_length = 0;                                          \
+            MPI_Error_string(mpi_status, mpi_error_string, &mpi_error_string_length); \
+            if (NULL != mpi_error_string)                                             \
+                fprintf(stderr,                                                       \
+                        "ERROR: MPI call \"%s\" in line %d of file %s failed "        \
+                        "with %s "                                                    \
+                        "(%d).\n",                                                    \
+                        #call, __LINE__, __FILE__, mpi_error_string, mpi_status);     \
+            else                                                                      \
+                fprintf(stderr,                                                       \
+                        "ERROR: MPI call \"%s\" in line %d of file %s failed "        \
+                        "with %d.\n",                                                 \
+                        #call, __LINE__, __FILE__, mpi_status);                       \
+        }                                                                             \
     }
 
 #include <cuda_runtime.h>
@@ -83,16 +81,15 @@ const int num_colors = sizeof(colors) / sizeof(uint32_t);
 #define POP_RANGE
 #endif
 
-#define CUDA_RT_CALL(call)                                                     \
-    {                                                                          \
-        cudaError_t cudaStatus = call;                                         \
-        if (cudaSuccess != cudaStatus)                                         \
-            fprintf(stderr,                                                    \
-                    "ERROR: CUDA RT call \"%s\" in line %d of file %s failed " \
-                    "with "                                                    \
-                    "%s (%d).\n",                                              \
-                    #call, __LINE__, __FILE__, cudaGetErrorString(cudaStatus), \
-                    cudaStatus);                                               \
+#define CUDA_RT_CALL(call)                                                                  \
+    {                                                                                       \
+        cudaError_t cudaStatus = call;                                                      \
+        if (cudaSuccess != cudaStatus)                                                      \
+            fprintf(stderr,                                                                 \
+                    "ERROR: CUDA RT call \"%s\" in line %d of file %s failed "              \
+                    "with "                                                                 \
+                    "%s (%d).\n",                                                           \
+                    #call, __LINE__, __FILE__, cudaGetErrorString(cudaStatus), cudaStatus); \
     }
 
 #ifdef USE_DOUBLE
@@ -107,22 +104,19 @@ constexpr real tol = 1.0e-8;
 
 const real PI = 2.0 * std::asin(1.0);
 
-void launch_initialize_boundaries(real* __restrict__ const a_new,
-                                  real* __restrict__ const a, const real pi,
-                                  const int offset, const int nx,
-                                  const int my_ny, const int ny);
+void launch_initialize_boundaries(real* __restrict__ const a_new, real* __restrict__ const a,
+                                  const real pi, const int offset, const int nx, const int my_ny,
+                                  const int ny);
 
-void launch_jacobi_kernel(real* __restrict__ const a_new,
-                          const real* __restrict__ const a,
-                          real* __restrict__ const l2_norm, const int iy_start,
-                          const int iy_end, const int nx, cudaStream_t stream);
+void launch_jacobi_kernel(real* __restrict__ const a_new, const real* __restrict__ const a,
+                          real* __restrict__ const l2_norm, const int iy_start, const int iy_end,
+                          const int nx, cudaStream_t stream);
 
-double single_gpu(const int nx, const int ny, const int iter_max,
-                  real* const a_ref_h, const int nccheck, const bool print);
+double single_gpu(const int nx, const int ny, const int iter_max, real* const a_ref_h,
+                  const int nccheck, const bool print);
 
 template <typename T>
-T get_argval(char** begin, char** end, const std::string& arg,
-             const T default_val) {
+T get_argval(char** begin, char** end, const std::string& arg, const T default_val) {
     T argval = default_val;
     char** itr = std::find(begin, end, arg);
     if (itr != end && ++itr != end) {
@@ -159,8 +153,8 @@ int main(int argc, char* argv[]) {
     int local_rank = -1;
     {
         MPI_Comm local_comm;
-        MPI_CALL(MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, rank,
-                                     MPI_INFO_NULL, &local_comm));
+        MPI_CALL(MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, rank, MPI_INFO_NULL,
+                                     &local_comm));
 
         MPI_CALL(MPI_Comm_rank(local_comm, &local_rank));
 
@@ -174,8 +168,7 @@ int main(int argc, char* argv[]) {
     CUDA_RT_CALL(cudaMallocHost(&a_ref_h, nx * ny * sizeof(real)));
     real* a_h;
     CUDA_RT_CALL(cudaMallocHost(&a_h, nx * ny * sizeof(real)));
-    double runtime_serial =
-        single_gpu(nx, ny, iter_max, a_ref_h, nccheck, !csv && (0 == rank));
+    double runtime_serial = single_gpu(nx, ny, iter_max, a_ref_h, nccheck, !csv && (0 == rank));
 
     real* a;
     CUDA_RT_CALL(cudaMalloc(&a, nx * (chunk_size + 2) * sizeof(real)));
@@ -195,15 +188,13 @@ int main(int argc, char* argv[]) {
     int iy_end = (iy_end_global - iy_start_global + 1) + iy_start;
 
     // Set diriclet boundary conditions on left and right boarder
-    launch_initialize_boundaries(a, a_new, PI, iy_start_global - 1, nx,
-                                 (chunk_size + 2), ny);
+    launch_initialize_boundaries(a, a_new, PI, iy_start_global - 1, nx, (chunk_size + 2), ny);
     CUDA_RT_CALL(cudaDeviceSynchronize());
 
     cudaStream_t compute_stream;
     CUDA_RT_CALL(cudaStreamCreate(&compute_stream));
     cudaEvent_t compute_done;
-    CUDA_RT_CALL(
-        cudaEventCreateWithFlags(&compute_done, cudaEventDisableTiming));
+    CUDA_RT_CALL(cudaEventCreateWithFlags(&compute_done, cudaEventDisableTiming));
 
     real* l2_norm_d;
     CUDA_RT_CALL(cudaMalloc(&l2_norm_d, sizeof(real)));
@@ -215,11 +206,10 @@ int main(int argc, char* argv[]) {
         const int top = rank > 0 ? rank - 1 : (size - 1);
         const int bottom = (rank + 1) % size;
         MPI_CALL(MPI_Sendrecv(a_new + iy_start * nx, nx, MPI_REAL_TYPE, top, 0,
-                              a_new + (iy_end * nx), nx, MPI_REAL_TYPE, bottom,
-                              0, MPI_COMM_WORLD, MPI_STATUS_IGNORE));
-        MPI_CALL(MPI_Sendrecv(a_new + (iy_end - 1) * nx, nx, MPI_REAL_TYPE,
-                              bottom, 0, a_new, nx, MPI_REAL_TYPE, top, 0,
-                              MPI_COMM_WORLD, MPI_STATUS_IGNORE));
+                              a_new + (iy_end * nx), nx, MPI_REAL_TYPE, bottom, 0, MPI_COMM_WORLD,
+                              MPI_STATUS_IGNORE));
+        MPI_CALL(MPI_Sendrecv(a_new + (iy_end - 1) * nx, nx, MPI_REAL_TYPE, bottom, 0, a_new, nx,
+                              MPI_REAL_TYPE, top, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE));
     }
     POP_RANGE
 
@@ -239,16 +229,13 @@ int main(int argc, char* argv[]) {
     double start = MPI_Wtime();
     PUSH_RANGE("Jacobi solve", 0)
     while (l2_norm > tol && iter < iter_max) {
-        CUDA_RT_CALL(
-            cudaMemsetAsync(l2_norm_d, 0, sizeof(real), compute_stream));
+        CUDA_RT_CALL(cudaMemsetAsync(l2_norm_d, 0, sizeof(real), compute_stream));
 
-        launch_jacobi_kernel(a_new, a, l2_norm_d, iy_start, iy_end, nx,
-                             compute_stream);
+        launch_jacobi_kernel(a_new, a, l2_norm_d, iy_start, iy_end, nx, compute_stream);
         CUDA_RT_CALL(cudaEventRecord(compute_done, compute_stream));
 
         if ((iter % nccheck) == 0 || (!csv && (iter % 100) == 0)) {
-            CUDA_RT_CALL(cudaMemcpyAsync(l2_norm_h, l2_norm_d, sizeof(real),
-                                         cudaMemcpyDeviceToHost,
+            CUDA_RT_CALL(cudaMemcpyAsync(l2_norm_h, l2_norm_d, sizeof(real), cudaMemcpyDeviceToHost,
                                          compute_stream));
         }
 
@@ -259,17 +246,15 @@ int main(int argc, char* argv[]) {
         CUDA_RT_CALL(cudaEventSynchronize(compute_done));
         PUSH_RANGE("MPI", 5)
         MPI_CALL(MPI_Sendrecv(a_new + iy_start * nx, nx, MPI_REAL_TYPE, top, 0,
-                              a_new + (iy_end * nx), nx, MPI_REAL_TYPE, bottom,
-                              0, MPI_COMM_WORLD, MPI_STATUS_IGNORE));
-        MPI_CALL(MPI_Sendrecv(a_new + (iy_end - 1) * nx, nx, MPI_REAL_TYPE,
-                              bottom, 0, a_new, nx, MPI_REAL_TYPE, top, 0,
-                              MPI_COMM_WORLD, MPI_STATUS_IGNORE));
+                              a_new + (iy_end * nx), nx, MPI_REAL_TYPE, bottom, 0, MPI_COMM_WORLD,
+                              MPI_STATUS_IGNORE));
+        MPI_CALL(MPI_Sendrecv(a_new + (iy_end - 1) * nx, nx, MPI_REAL_TYPE, bottom, 0, a_new, nx,
+                              MPI_REAL_TYPE, top, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE));
         POP_RANGE
 
         if ((iter % nccheck) == 0 || (!csv && (iter % 100) == 0)) {
             CUDA_RT_CALL(cudaStreamSynchronize(compute_stream));
-            MPI_CALL(MPI_Allreduce(l2_norm_h, &l2_norm, 1, MPI_REAL_TYPE,
-                                   MPI_SUM, MPI_COMM_WORLD));
+            MPI_CALL(MPI_Allreduce(l2_norm_h, &l2_norm, 1, MPI_REAL_TYPE, MPI_SUM, MPI_COMM_WORLD));
             l2_norm = std::sqrt(l2_norm);
 
             if (!csv && 0 == rank && (iter % 100) == 0) {
@@ -283,42 +268,38 @@ int main(int argc, char* argv[]) {
     double stop = MPI_Wtime();
     POP_RANGE
 
-    CUDA_RT_CALL(cudaMemcpy(
-        a_h + iy_start_global * nx, a + nx,
-        std::min((ny - iy_start_global) * nx, chunk_size * nx) * sizeof(real),
-        cudaMemcpyDeviceToHost));
+    CUDA_RT_CALL(cudaMemcpy(a_h + iy_start_global * nx, a + nx,
+                            std::min((ny - iy_start_global) * nx, chunk_size * nx) * sizeof(real),
+                            cudaMemcpyDeviceToHost));
 
     int result_correct = 1;
-    for (int iy = iy_start_global; result_correct && (iy < iy_end_global);
-         ++iy) {
+    for (int iy = iy_start_global; result_correct && (iy < iy_end_global); ++iy) {
         for (int ix = 1; result_correct && (ix < (nx - 1)); ++ix) {
             if (std::fabs(a_ref_h[iy * nx + ix] - a_h[iy * nx + ix]) > tol) {
-                fprintf(
-                    stderr,
-                    "ERROR on rank %d: a[%d * %d + %d] = %f does not match %f "
-                    "(reference)\n",
-                    rank, iy, nx, ix, a_h[iy * nx + ix], a_ref_h[iy * nx + ix]);
+                fprintf(stderr,
+                        "ERROR on rank %d: a[%d * %d + %d] = %f does not match %f "
+                        "(reference)\n",
+                        rank, iy, nx, ix, a_h[iy * nx + ix], a_ref_h[iy * nx + ix]);
                 result_correct = 0;
             }
         }
     }
 
     int global_result_correct = 1;
-    MPI_CALL(MPI_Allreduce(&result_correct, &global_result_correct, 1, MPI_INT,
-                           MPI_MIN, MPI_COMM_WORLD));
+    MPI_CALL(MPI_Allreduce(&result_correct, &global_result_correct, 1, MPI_INT, MPI_MIN,
+                           MPI_COMM_WORLD));
     result_correct = global_result_correct;
 
     if (rank == 0 && result_correct) {
         if (csv) {
-            printf("mpi, %d, %d, %d, %d, %d, 1, %f, %f\n", nx, ny, iter_max,
-                   nccheck, size, (stop - start), runtime_serial);
+            printf("mpi, %d, %d, %d, %d, %d, 1, %f, %f\n", nx, ny, iter_max, nccheck, size,
+                   (stop - start), runtime_serial);
         } else {
             printf("Num GPUs: %d.\n", size);
             printf(
                 "%dx%d: 1 GPU: %8.4f s, %d GPUs: %8.4f s, speedup: %8.2f, "
                 "efficiency: %8.2f \n",
-                ny, nx, runtime_serial, size, (stop - start),
-                runtime_serial / (stop - start),
+                ny, nx, runtime_serial, size, (stop - start), runtime_serial / (stop - start),
                 runtime_serial / (size * (stop - start)) * 100);
         }
     }
@@ -338,8 +319,8 @@ int main(int argc, char* argv[]) {
     return (result_correct == 1) ? 0 : 1;
 }
 
-double single_gpu(const int nx, const int ny, const int iter_max,
-                  real* const a_ref_h, const int nccheck, const bool print) {
+double single_gpu(const int nx, const int ny, const int iter_max, real* const a_ref_h,
+                  const int nccheck, const bool print) {
     real* a;
     real* a_new;
 
@@ -369,12 +350,9 @@ double single_gpu(const int nx, const int ny, const int iter_max,
     CUDA_RT_CALL(cudaStreamCreate(&compute_stream));
     CUDA_RT_CALL(cudaStreamCreate(&push_top_stream));
     CUDA_RT_CALL(cudaStreamCreate(&push_bottom_stream));
-    CUDA_RT_CALL(
-        cudaEventCreateWithFlags(&compute_done, cudaEventDisableTiming));
-    CUDA_RT_CALL(
-        cudaEventCreateWithFlags(&push_top_done, cudaEventDisableTiming));
-    CUDA_RT_CALL(
-        cudaEventCreateWithFlags(&push_bottom_done, cudaEventDisableTiming));
+    CUDA_RT_CALL(cudaEventCreateWithFlags(&compute_done, cudaEventDisableTiming));
+    CUDA_RT_CALL(cudaEventCreateWithFlags(&push_top_done, cudaEventDisableTiming));
+    CUDA_RT_CALL(cudaEventCreateWithFlags(&push_bottom_done, cudaEventDisableTiming));
 
     CUDA_RT_CALL(cudaMalloc(&l2_norm_d, sizeof(real)));
     CUDA_RT_CALL(cudaMallocHost(&l2_norm_h, sizeof(real)));
@@ -394,33 +372,28 @@ double single_gpu(const int nx, const int ny, const int iter_max,
     double start = MPI_Wtime();
     PUSH_RANGE("Jacobi solve", 0)
     while (l2_norm > tol && iter < iter_max) {
-        CUDA_RT_CALL(
-            cudaMemsetAsync(l2_norm_d, 0, sizeof(real), compute_stream));
+        CUDA_RT_CALL(cudaMemsetAsync(l2_norm_d, 0, sizeof(real), compute_stream));
 
         CUDA_RT_CALL(cudaStreamWaitEvent(compute_stream, push_top_done, 0));
         CUDA_RT_CALL(cudaStreamWaitEvent(compute_stream, push_bottom_done, 0));
 
-        launch_jacobi_kernel(a_new, a, l2_norm_d, iy_start, iy_end, nx,
-                             compute_stream);
+        launch_jacobi_kernel(a_new, a, l2_norm_d, iy_start, iy_end, nx, compute_stream);
         CUDA_RT_CALL(cudaEventRecord(compute_done, compute_stream));
 
         if ((iter % nccheck) == 0 || (iter % 100) == 0) {
-            CUDA_RT_CALL(cudaMemcpyAsync(l2_norm_h, l2_norm_d, sizeof(real),
-                                         cudaMemcpyDeviceToHost,
+            CUDA_RT_CALL(cudaMemcpyAsync(l2_norm_h, l2_norm_d, sizeof(real), cudaMemcpyDeviceToHost,
                                          compute_stream));
         }
 
         // Apply periodic boundary conditions
 
         CUDA_RT_CALL(cudaStreamWaitEvent(push_top_stream, compute_done, 0));
-        CUDA_RT_CALL(
-            cudaMemcpyAsync(a_new, a_new + (iy_end - 1) * nx, nx * sizeof(real),
-                            cudaMemcpyDeviceToDevice, push_top_stream));
+        CUDA_RT_CALL(cudaMemcpyAsync(a_new, a_new + (iy_end - 1) * nx, nx * sizeof(real),
+                                     cudaMemcpyDeviceToDevice, push_top_stream));
         CUDA_RT_CALL(cudaEventRecord(push_top_done, push_top_stream));
 
         CUDA_RT_CALL(cudaStreamWaitEvent(push_bottom_stream, compute_done, 0));
-        CUDA_RT_CALL(cudaMemcpyAsync(a_new + iy_end * nx, a_new + iy_start * nx,
-                                     nx * sizeof(real),
+        CUDA_RT_CALL(cudaMemcpyAsync(a_new + iy_end * nx, a_new + iy_start * nx, nx * sizeof(real),
                                      cudaMemcpyDeviceToDevice, compute_stream));
         CUDA_RT_CALL(cudaEventRecord(push_bottom_done, push_bottom_stream));
 
@@ -428,8 +401,7 @@ double single_gpu(const int nx, const int ny, const int iter_max,
             CUDA_RT_CALL(cudaStreamSynchronize(compute_stream));
             l2_norm = *l2_norm_h;
             l2_norm = std::sqrt(l2_norm);
-            if (print && (iter % 100) == 0)
-                printf("%5d, %0.6f\n", iter, l2_norm);
+            if (print && (iter % 100) == 0) printf("%5d, %0.6f\n", iter, l2_norm);
         }
 
         std::swap(a_new, a);
@@ -438,8 +410,7 @@ double single_gpu(const int nx, const int ny, const int iter_max,
     POP_RANGE
     double stop = MPI_Wtime();
 
-    CUDA_RT_CALL(
-        cudaMemcpy(a_ref_h, a, nx * ny * sizeof(real), cudaMemcpyDeviceToHost));
+    CUDA_RT_CALL(cudaMemcpy(a_ref_h, a, nx * ny * sizeof(real), cudaMemcpyDeviceToHost));
 
     CUDA_RT_CALL(cudaEventDestroy(push_bottom_done));
     CUDA_RT_CALL(cudaEventDestroy(push_top_done));
