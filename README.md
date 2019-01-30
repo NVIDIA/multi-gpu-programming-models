@@ -18,7 +18,7 @@ Each variant is a stand alone Makefile project and all variants have been descri
 * CUB: Optional for optimized residual reductions. Set CUB_HOME to your cub installation directory. The examples have been developed and tested with cub 1.8.0.
 
 # Building 
-Each variant come with a Makefile and can be build by simply issuing make, e.g.
+Each variant come with a Makefile and can be build by simply issuing make, e.g. 
 ```sh
 multi-gpu-programming-models$ cd multi_threaded_copy
 multi_threaded_copy$ make CUB_HOME=../cub
