@@ -9,7 +9,7 @@ This project implements the well known multi GPU Jacobi solver with different mu
 * Multi Process with MPI using CUDA-aware MPI for inter GPU communication (`mpi`)
 * Multi Process with MPI using CUDA-aware MPI for inter GPU communication with overlapping communication (`mpi_overlapp`)
 
-Each variant is a stand alone Makefile project and all variants have been described in the GTC EU 2017 Talk [Multi GPU Programming Models](http://on-demand-gtc.gputechconf.com/gtc-quicklink/4rWBZ)
+Each variant is a stand alone Makefile project and all variants have been described in the GTC EU 2018 Talk [Multi GPU Programming Models](http://on-demand-gtc.gputechconf.com/gtc-quicklink/eCVNLP6)
 
 # Requirements
 * CUDA: verison 9.2 or later is required by all variants.
