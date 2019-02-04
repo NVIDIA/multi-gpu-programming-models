@@ -110,7 +110,7 @@ void launch_initialize_boundaries(real* __restrict__ const a_new, real* __restri
 
 void launch_jacobi_kernel(real* __restrict__ const a_new, const real* __restrict__ const a,
                           real* __restrict__ const l2_norm, const int iy_start, const int iy_end,
-                          const int nx, cudaStream_t stream);
+                          const int nx, const bool calculate_norm, cudaStream_t stream);
 
 double single_gpu(const int nx, const int ny, const int iter_max, real* const a_ref_h,
                   const int nccheck, const bool print);
@@ -224,6 +224,8 @@ int main(int argc, char* argv[]) {
 
     int iter = 0;
     real l2_norm = 1.0;
+    bool calculate_norm; /* boolean to store whether l2 norm will be calculated in
+                            an iteration or not */
 
     MPI_CALL(MPI_Barrier(MPI_COMM_WORLD));
     double start = MPI_Wtime();
@@ -231,10 +233,13 @@ int main(int argc, char* argv[]) {
     while (l2_norm > tol && iter < iter_max) {
         CUDA_RT_CALL(cudaMemsetAsync(l2_norm_d, 0, sizeof(real), compute_stream));
 
-        launch_jacobi_kernel(a_new, a, l2_norm_d, iy_start, iy_end, nx, compute_stream);
+        calculate_norm = (iter % nccheck) == 0 || (!csv && (iter % 100) == 0);
+
+        launch_jacobi_kernel(a_new, a, l2_norm_d, iy_start, iy_end, nx, calculate_norm,
+                             compute_stream);
         CUDA_RT_CALL(cudaEventRecord(compute_done, compute_stream));
 
-        if ((iter % nccheck) == 0 || (!csv && (iter % 100) == 0)) {
+        if (calculate_norm) {
             CUDA_RT_CALL(cudaMemcpyAsync(l2_norm_h, l2_norm_d, sizeof(real), cudaMemcpyDeviceToHost,
                                          compute_stream));
         }
@@ -252,7 +257,7 @@ int main(int argc, char* argv[]) {
                               MPI_REAL_TYPE, top, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE));
         POP_RANGE
 
-        if ((iter % nccheck) == 0 || (!csv && (iter % 100) == 0)) {
+        if (calculate_norm) {
             CUDA_RT_CALL(cudaStreamSynchronize(compute_stream));
             MPI_CALL(MPI_Allreduce(l2_norm_h, &l2_norm, 1, MPI_REAL_TYPE, MPI_SUM, MPI_COMM_WORLD));
             l2_norm = std::sqrt(l2_norm);
@@ -368,6 +373,7 @@ double single_gpu(const int nx, const int ny, const int iter_max, real* const a_
 
     int iter = 0;
     real l2_norm = 1.0;
+    bool calculate_norm;
 
     double start = MPI_Wtime();
     PUSH_RANGE("Jacobi solve", 0)
@@ -377,10 +383,12 @@ double single_gpu(const int nx, const int ny, const int iter_max, real* const a_
         CUDA_RT_CALL(cudaStreamWaitEvent(compute_stream, push_top_done, 0));
         CUDA_RT_CALL(cudaStreamWaitEvent(compute_stream, push_bottom_done, 0));
 
-        launch_jacobi_kernel(a_new, a, l2_norm_d, iy_start, iy_end, nx, compute_stream);
+        calculate_norm = (iter % nccheck) == 0 || (iter % 100) == 0;
+        launch_jacobi_kernel(a_new, a, l2_norm_d, iy_start, iy_end, nx, calculate_norm,
+                             compute_stream);
         CUDA_RT_CALL(cudaEventRecord(compute_done, compute_stream));
 
-        if ((iter % nccheck) == 0 || (iter % 100) == 0) {
+        if (calculate_norm) {
             CUDA_RT_CALL(cudaMemcpyAsync(l2_norm_h, l2_norm_d, sizeof(real), cudaMemcpyDeviceToHost,
                                          compute_stream));
         }
@@ -397,7 +405,7 @@ double single_gpu(const int nx, const int ny, const int iter_max, real* const a_
                                      cudaMemcpyDeviceToDevice, compute_stream));
         CUDA_RT_CALL(cudaEventRecord(push_bottom_done, push_bottom_stream));
 
-        if ((iter % nccheck) == 0 || (iter % 100) == 0) {
+        if (calculate_norm) {
             CUDA_RT_CALL(cudaStreamSynchronize(compute_stream));
             l2_norm = *l2_norm_h;
             l2_norm = std::sqrt(l2_norm);

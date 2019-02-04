@@ -71,7 +71,7 @@ void launch_initialize_boundaries(real* __restrict__ const a_new, real* __restri
 template <int BLOCK_DIM_X, int BLOCK_DIM_Y>
 __global__ void jacobi_kernel(real* __restrict__ const a_new, const real* __restrict__ const a,
                               real* __restrict__ const l2_norm, const int iy_start,
-                              const int iy_end, const int nx) {
+                              const int iy_end, const int nx, const bool calculate_norm) {
 #ifdef HAVE_CUB
     typedef cub::BlockReduce<real, BLOCK_DIM_X, cub::BLOCK_REDUCE_WARP_REDUCTIONS, BLOCK_DIM_Y>
         BlockReduce;
@@ -85,25 +85,29 @@ __global__ void jacobi_kernel(real* __restrict__ const a_new, const real* __rest
         const real new_val = 0.25 * (a[iy * nx + ix + 1] + a[iy * nx + ix - 1] +
                                      a[(iy + 1) * nx + ix] + a[(iy - 1) * nx + ix]);
         a_new[iy * nx + ix] = new_val;
-        real residue = new_val - a[iy * nx + ix];
-        local_l2_norm += residue * residue;
+        if (calculate_norm) {
+            real residue = new_val - a[iy * nx + ix];
+            local_l2_norm += residue * residue;
+        }
     }
+    if (calculate_norm) {
 #ifdef HAVE_CUB
-    real block_l2_norm = BlockReduce(temp_storage).Sum(local_l2_norm);
-    if (0 == threadIdx.y && 0 == threadIdx.x) atomicAdd(l2_norm, block_l2_norm);
+        real block_l2_norm = BlockReduce(temp_storage).Sum(local_l2_norm);
+        if (0 == threadIdx.y && 0 == threadIdx.x) atomicAdd(l2_norm, block_l2_norm);
 #else
-    atomicAdd(l2_norm, local_l2_norm);
+        atomicAdd(l2_norm, local_l2_norm);
 #endif  // HAVE_CUB
+    }
 }
 
 void launch_jacobi_kernel(real* __restrict__ const a_new, const real* __restrict__ const a,
                           real* __restrict__ const l2_norm, const int iy_start, const int iy_end,
-                          const int nx, cudaStream_t stream) {
+                          const int nx, const bool calculate_norm, cudaStream_t stream) {
     constexpr int dim_block_x = 32;
     constexpr int dim_block_y = 4;
     dim3 dim_grid((nx + dim_block_x - 1) / dim_block_x,
                   ((iy_end - iy_start) + dim_block_y - 1) / dim_block_y, 1);
     jacobi_kernel<dim_block_x, dim_block_y><<<dim_grid, {dim_block_x, dim_block_y, 1}, 0, stream>>>(
-        a_new, a, l2_norm, iy_start, iy_end, nx);
+        a_new, a, l2_norm, iy_start, iy_end, nx, calculate_norm);
     CUDA_RT_CALL(cudaGetLastError());
 }
