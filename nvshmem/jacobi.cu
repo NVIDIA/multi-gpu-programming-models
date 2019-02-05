@@ -184,6 +184,11 @@ int main(int argc, char* argv[]) {
     const int nccheck = get_argval<int>(argv, argv + argc, "-nccheck", 1);
     const bool csv = get_arg(argv, argv + argc, "-csv");
 
+    if (nccheck != 1) {
+        printf("Only nccheck=1 is supported\n");
+        exit(1);
+    }
+
     real* a_new;
 
     real* a_ref_h;
