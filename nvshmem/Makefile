@@ -1,7 +1,6 @@
 # Copyright (c) 2017-2018, NVIDIA CORPORATION. All rights reserved.
 NP ?= 1
 NVCC=nvcc
-MPICXX=mpicxx
 MPIRUN ?= mpirun
 GENCODE_SM30	:= -gencode arch=compute_30,code=sm_30
 GENCODE_SM35	:= -gencode arch=compute_35,code=sm_35
@@ -16,24 +15,18 @@ ifdef CUB_HOME
 else
         NVCC_FLAGS = -Xptxas --optimize-float-atomics
 endif
-NVCC_FLAGS += -lineinfo $(GENCODE_FLAGS) -std=c++11
-MPICXX_FLAGS = -DUSE_NVTX -I$(CUDA_HOME)/include -std=c++11
-LD_FLAGS = -L$(CUDA_HOME)/lib64 -lcudart -lnvToolsExt
-jacobi: Makefile jacobi.cpp jacobi_kernels.o
-	$(MPICXX) $(MPICXX_FLAGS) jacobi.cpp jacobi_kernels.o $(LD_FLAGS) -o jacobi
-
-jacobi_kernels.o: Makefile jacobi_kernels.cu
-	$(NVCC) $(NVCC_FLAGS) jacobi_kernels.cu -c
+NVCC_FLAGS += -dc -Xcompiler -fopenmp -lineinfo -DUSE_NVTX -lnvToolsExt $(GENCODE_FLAGS) -std=c++11 -I$(NVSHMEM_HOME)/include -I$(MPI_HOME)/include 
+NVCC_LDFLAGS = -ccbin=mpic++ -L$(NVSHMEM_HOME)/lib -lshmem -L$(MPI_HOME)/lib -lmpi -L$(CUDA_HOME)/lib64 -lcuda -lcudart -lnvToolsExt
+jacobi: Makefile jacobi.cu
+	$(NVCC) $(NVCC_FLAGS) jacobi.cu -c -o jacobi.o
+	$(NVCC) $(GENCODE_FLAGS) jacobi.o -o jacobi $(NVCC_LDFLAGS) 
 
 .PHONY.: clean
 clean:
-	rm -f jacobi jacobi_kernels.o *.nvprof
+	rm -f jacobi jacobi.o
 
 memcheck: jacobi
-	$(MPIRUN) -np $(NP) cuda-memcheck ./jacobi
+	$(MPIRUN) -np $(NP) cuda-memcheck ./jacobi -nx 512 -ny 512
 
 run: jacobi
 	$(MPIRUN) -np $(NP) ./jacobi
-
-profile: jacobi
-	$(MPIRUN) -np $(NP) nvprof -o jacobi.%q{OMPI_COMM_WORLD_RANK}.nvprof --process-name "rank %q{OMPI_COMM_WORLD_RANK}" --context-name "rank %q{OMPI_COMM_WORLD_RANK}"  ./jacobi -niter 10

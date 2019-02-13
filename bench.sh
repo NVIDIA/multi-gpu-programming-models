@@ -25,13 +25,11 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-CPUID=0
+CPUID=0-23
 NREP=5
 IFS=$'\n'
 
-ARGS="-csv"
-
-echo "type, nx, ny, iter_max, nccheck, num_devices, p2p, runtime, runtime_serial"
+ARGS="-csv -nx 18432 -ny 18432"
 
 function find_best () {
     declare -a RESULTS
@@ -42,122 +40,183 @@ function find_best () {
     unset RESULTS
 }
 
+#sudo nvidia-smi -ac 958,1597
+
+#Single GPU
+if false; then
+    echo "type, nx, ny, iter_max, nccheck, runtime"
+    export CUDA_VISIBLE_DEVICES="0"
+    for (( nx=1024; nx <= 18*1024; nx+=1024 )); do
+        find_best taskset -c ${CPUID} ./single_gpu/jacobi -csv -nx $nx -ny $nx
+    done
+fi
+
+if true; then
+    echo "type, nx, ny, iter_max, nccheck, runtime"
+    export CUDA_VISIBLE_DEVICES="0"
+    find_best taskset -c ${CPUID} ./single_gpu/jacobi -csv -nx 18432 -ny 18432
+fi
+
+echo "type, nx, ny, iter_max, nccheck, num_devices, p2p, runtime, runtime_serial"
+
 #Single threaded copy - no P2P
 if true; then
 
     NUM_GPUS=1
     export CUDA_VISIBLE_DEVICES="0"
-    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi ${ARGS} -nop2p
+    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi -csv -nx 18432 -ny 18432 -nop2p
 
     NUM_GPUS=2
     export CUDA_VISIBLE_DEVICES="0,1"
-    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi ${ARGS} -nop2p
+    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi -csv -nx 18432 -ny 18432 -nop2p
 
     NUM_GPUS=3
     export CUDA_VISIBLE_DEVICES="0,1,2"
-    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi ${ARGS} -nop2p
+    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi -csv -nx 18432 -ny 18432 -nop2p
 
     NUM_GPUS=4
     export CUDA_VISIBLE_DEVICES="0,1,2,3"
-    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi ${ARGS} -nop2p
+    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi -csv -nx 18432 -ny 18432 -nop2p
 
     #P2P not available for all comm pairs
     NUM_GPUS=5
     export CUDA_VISIBLE_DEVICES="0,1,2,3,4"
-    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi ${ARGS} -nop2p
+    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi -csv -nx 18432 -ny 18432 -nop2p
 
     #P2P not available for all comm pairs
     NUM_GPUS=6
     export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5"
-    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi ${ARGS} -nop2p
+    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi -csv -nx 18432 -ny 18432 -nop2p
 
     #P2P not available for all comm pairs
     NUM_GPUS=7
     export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6"
-    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi ${ARGS} -nop2p
+    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi -csv -nx 18432 -ny 18432 -nop2p
 
     #P2P not available for all comm pairs
     NUM_GPUS=8
     export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7"
-    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi ${ARGS} -nop2p
+    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi -csv -nx 18432 -ny 18432 -nop2p
+    
+    #P2P not available for all comm pairs
+    NUM_GPUS=9
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8"
+    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi -csv -nx 18432 -ny 18432 -nop2p
+    
+    #P2P not available for all comm pairs
+    NUM_GPUS=10
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9"
+    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi -csv -nx 18432 -ny 18432 -nop2p
+    
+    #P2P not available for all comm pairs
+    NUM_GPUS=11
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10"
+    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi -csv -nx 18432 -ny 18432 -nop2p
 
+    #P2P not available for all comm pairs
+    NUM_GPUS=12
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11"
+    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi -csv -nx 18432 -ny 18432 -nop2p
+    
+    #P2P not available for all comm pairs
+    NUM_GPUS=13
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12"
+    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi -csv -nx 18432 -ny 18432 -nop2p
+    
+    #P2P not available for all comm pairs
+    NUM_GPUS=14
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12,13"
+    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi -csv -nx 18432 -ny 18432 -nop2p
+    
+    #P2P not available for all comm pairs
+    NUM_GPUS=15
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14"
+    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi -csv -nx 18432 -ny 18432 -nop2p
+    
+    #P2P not available for all comm pairs
+    NUM_GPUS=16
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15"
+    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi -csv -nx 18432 -ny 18432 -nop2p
 fi
 
-# Single threaded copy - P2P, no device reordering
+# Single threaded copy - P2P
 if true; then
 
     NUM_GPUS=1
     export CUDA_VISIBLE_DEVICES="0"
-    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi ${ARGS}
+    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=2
     export CUDA_VISIBLE_DEVICES="0,1"
-    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi ${ARGS}
+    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=3
     export CUDA_VISIBLE_DEVICES="0,1,2"
-    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi ${ARGS}
+    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=4
     export CUDA_VISIBLE_DEVICES="0,1,2,3"
-    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi ${ARGS}
+    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi -csv -nx 18432 -ny 18432
 
     #P2P not available for all comm pairs
     NUM_GPUS=5
     export CUDA_VISIBLE_DEVICES="0,1,2,3,4"
-    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi ${ARGS}
+    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi -csv -nx 18432 -ny 18432
 
     #P2P not available for all comm pairs
     NUM_GPUS=6
     export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5"
-    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi ${ARGS}
+    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi -csv -nx 18432 -ny 18432
 
     #P2P not available for all comm pairs
     NUM_GPUS=7
     export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6"
-    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi ${ARGS}
+    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi -csv -nx 18432 -ny 18432
 
     #P2P not available for all comm pairs
     NUM_GPUS=8
     export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7"
-    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi ${ARGS}
+    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi -csv -nx 18432 -ny 18432
+    
+    #P2P not available for all comm pairs
+    NUM_GPUS=9
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8"
+    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi -csv -nx 18432 -ny 18432
+    
+    #P2P not available for all comm pairs
+    NUM_GPUS=10
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9"
+    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi -csv -nx 18432 -ny 18432
+    
+    #P2P not available for all comm pairs
+    NUM_GPUS=11
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10"
+    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi -csv -nx 18432 -ny 18432
 
-fi
-
-# Single threaded copy - device reordering DGX-1V
-if true; then
-
-    NUM_GPUS=1
-    export CUDA_VISIBLE_DEVICES="0"                 # 0xNV2, 0xNV1
-    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi ${ARGS}
-
-    NUM_GPUS=2
-    export CUDA_VISIBLE_DEVICES="0,3"               # 2xNV2, 0xNV1
-    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi ${ARGS}
-
-    NUM_GPUS=3
-    export CUDA_VISIBLE_DEVICES="0,3,2"             # 2xNV2, 1xNV1
-    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi ${ARGS}
-
-    NUM_GPUS=4
-    export CUDA_VISIBLE_DEVICES="0,3,2,1"           # 3xNV2, 1xNV1
-    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi ${ARGS}
-
-    NUM_GPUS=5
-    export CUDA_VISIBLE_DEVICES="3,2,1,5,7"         # 3xNV2, 2xNV1
-    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi ${ARGS}
-
-    NUM_GPUS=6
-    export CUDA_VISIBLE_DEVICES="0,3,2,1,5,4"       # 5xNV2, 1xNV1
-    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi ${ARGS}
-
-    NUM_GPUS=7
-    export CUDA_VISIBLE_DEVICES="0,4,7,6,5,1,2"     # 6xNV2, 1xNV1
-    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi ${ARGS}
-
-    NUM_GPUS=8
-    export CUDA_VISIBLE_DEVICES="0,3,2,1,5,6,7,4"   # 8xNV2, 0xNV1
-    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi ${ARGS}
+    #P2P not available for all comm pairs
+    NUM_GPUS=12
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11"
+    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi -csv -nx 18432 -ny 18432
+    
+    #P2P not available for all comm pairs
+    NUM_GPUS=13
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12"
+    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi -csv -nx 18432 -ny 18432
+    
+    #P2P not available for all comm pairs
+    NUM_GPUS=14
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12,13"
+    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi -csv -nx 18432 -ny 18432
+    
+    #P2P not available for all comm pairs
+    NUM_GPUS=15
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14"
+    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi -csv -nx 18432 -ny 18432
+    
+    #P2P not available for all comm pairs
+    NUM_GPUS=16
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15"
+    find_best taskset -c ${CPUID} ./single_threaded_copy/jacobi -csv -nx 18432 -ny 18432
 
 fi
 
@@ -165,46 +224,71 @@ fi
 if true; then
 
     export OMP_PROC_BIND=FALSE
-    
-    NUM_GPUS=1
-    export CUDA_VISIBLE_DEVICES="0"                 # 0xNV2, 0xNV1
     unset OMP_PLACES
-    find_best ./multi_threaded_copy/jacobi ${ARGS}
+
+    NUM_GPUS=1
+    export CUDA_VISIBLE_DEVICES="0"
+    find_best ./multi_threaded_copy/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=2
-    export CUDA_VISIBLE_DEVICES="0,3"               # 2xNV2, 0xNV1
-    unset OMP_PLACES
-    find_best ./multi_threaded_copy/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1"
+    find_best ./multi_threaded_copy/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=3
-    export CUDA_VISIBLE_DEVICES="0,3,2"             # 2xNV2, 1xNV1
-    unset OMP_PLACES
-    find_best ./multi_threaded_copy/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1,2"
+    find_best ./multi_threaded_copy/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=4
-    export CUDA_VISIBLE_DEVICES="0,3,2,1"           # 3xNV2, 1xNV1
-    unset OMP_PLACES
-    find_best ./multi_threaded_copy/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1,2,3"
+    find_best ./multi_threaded_copy/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=5
-    export CUDA_VISIBLE_DEVICES="3,2,1,5,7"         # 3xNV2, 2xNV1
-    unset OMP_PLACES
-    find_best ./multi_threaded_copy/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4"
+    find_best ./multi_threaded_copy/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=6
-    export CUDA_VISIBLE_DEVICES="0,3,2,1,5,4"       # 5xNV2, 1xNV1
-    unset OMP_PLACES
-    find_best ./multi_threaded_copy/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5"
+    find_best ./multi_threaded_copy/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=7
-    export CUDA_VISIBLE_DEVICES="0,4,7,6,5,1,2"     # 6xNV2, 1xNV1
-    unset OMP_PLACES
-    find_best ./multi_threaded_copy/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6"
+    find_best ./multi_threaded_copy/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=8
-    export CUDA_VISIBLE_DEVICES="0,3,2,1,5,6,7,4"   # 8xNV2, 0xNV1
-    unset OMP_PLACES
-    find_best ./multi_threaded_copy/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7"
+    find_best ./multi_threaded_copy/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=9
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8"
+    find_best ./multi_threaded_copy/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=10
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9"
+    find_best ./multi_threaded_copy/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=11
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10"
+    find_best ./multi_threaded_copy/jacobi -csv -nx 18432 -ny 18432
+
+    NUM_GPUS=12
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11"
+    find_best ./multi_threaded_copy/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=13
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12"
+    find_best ./multi_threaded_copy/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=14
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12,13"
+    find_best ./multi_threaded_copy/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=15
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14"
+    find_best ./multi_threaded_copy/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=16
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15"
+    find_best ./multi_threaded_copy/jacobi -csv -nx 18432 -ny 18432
 
 fi
 
@@ -214,44 +298,84 @@ export OMP_PROC_BIND=TRUE
 if true; then
 
     NUM_GPUS=1
-    export CUDA_VISIBLE_DEVICES="0"                 # 0xNV2, 0xNV1
+    export CUDA_VISIBLE_DEVICES="0"
     export OMP_PLACES="{0}"
-    find_best ./multi_threaded_copy/jacobi ${ARGS}
+    find_best ./multi_threaded_copy/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=2
-    export CUDA_VISIBLE_DEVICES="0,3"               # 2xNV2, 0xNV1
+    export CUDA_VISIBLE_DEVICES="0,1"
     export OMP_PLACES="{0},{1}"
-    find_best ./multi_threaded_copy/jacobi ${ARGS}
+    find_best ./multi_threaded_copy/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=3
-    export CUDA_VISIBLE_DEVICES="0,3,2"             # 2xNV2, 1xNV1
+    export CUDA_VISIBLE_DEVICES="0,1,2"
     export OMP_PLACES="{0},{1},{2}"
-    find_best ./multi_threaded_copy/jacobi ${ARGS}
+    find_best ./multi_threaded_copy/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=4
-    export CUDA_VISIBLE_DEVICES="0,3,2,1"           # 3xNV2, 1xNV1
+    export CUDA_VISIBLE_DEVICES="0,1,2,3"
     export OMP_PLACES="{0},{1},{2},{3}"
-    find_best ./multi_threaded_copy/jacobi ${ARGS}
+    find_best ./multi_threaded_copy/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=5
-    export CUDA_VISIBLE_DEVICES="3,2,1,5,7"         # 3xNV2, 2xNV1
-    export OMP_PLACES="{0},{1},{2},{20},{21}"
-    find_best ./multi_threaded_copy/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4"
+    export OMP_PLACES="{0},{1},{2},{3},{4}"
+    find_best ./multi_threaded_copy/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=6
-    export CUDA_VISIBLE_DEVICES="0,3,2,1,5,4"       # 5xNV2, 1xNV1
-    export OMP_PLACES="{0},{1},{2},{3},{20},{21}"
-    find_best ./multi_threaded_copy/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5}"
+    find_best ./multi_threaded_copy/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=7
-    export CUDA_VISIBLE_DEVICES="0,4,7,6,5,1,2"     # 6xNV2, 1xNV1
-    export OMP_PLACES="{0},{20},{21},{22},{23},{1},{2}"
-    find_best ./multi_threaded_copy/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6}"
+    find_best ./multi_threaded_copy/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=8
-    export CUDA_VISIBLE_DEVICES="0,3,2,1,5,6,7,4"   # 8xNV2, 0xNV1
-    export OMP_PLACES="{0},{1},{2},{3},{20},{21},{22},{23}"
-    find_best ./multi_threaded_copy/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7}"
+    find_best ./multi_threaded_copy/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=9
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7},{8}"
+    find_best ./multi_threaded_copy/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=10
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7},{8},{9}"
+    find_best ./multi_threaded_copy/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=11
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10}"
+    find_best ./multi_threaded_copy/jacobi -csv -nx 18432 -ny 18432
+
+    NUM_GPUS=12
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11}"
+    find_best ./multi_threaded_copy/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=13
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12}"
+    find_best ./multi_threaded_copy/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=14
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12,13"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13}"
+    find_best ./multi_threaded_copy/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=15
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14}"
+    find_best ./multi_threaded_copy/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=16
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15}"
+    find_best ./multi_threaded_copy/jacobi -csv -nx 18432 -ny 18432
 
 fi
 
@@ -259,89 +383,169 @@ fi
 if true; then
 
     NUM_GPUS=1
-    export CUDA_VISIBLE_DEVICES="0"                 # 0xNV2, 0xNV1
+    export CUDA_VISIBLE_DEVICES="0"
     export OMP_PLACES="{0}"
-    find_best ./multi_threaded_copy_overlapp/jacobi ${ARGS}
+    find_best ./multi_threaded_copy_overlapp/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=2
-    export CUDA_VISIBLE_DEVICES="0,3"               # 2xNV2, 0xNV1
+    export CUDA_VISIBLE_DEVICES="0,1"
     export OMP_PLACES="{0},{1}"
-    find_best ./multi_threaded_copy_overlapp/jacobi ${ARGS}
+    find_best ./multi_threaded_copy_overlapp/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=3
-    export CUDA_VISIBLE_DEVICES="0,3,2"             # 2xNV2, 1xNV1
+    export CUDA_VISIBLE_DEVICES="0,1,2"
     export OMP_PLACES="{0},{1},{2}"
-    find_best ./multi_threaded_copy_overlapp/jacobi ${ARGS}
+    find_best ./multi_threaded_copy_overlapp/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=4
-    export CUDA_VISIBLE_DEVICES="0,3,2,1"           # 3xNV2, 1xNV1
+    export CUDA_VISIBLE_DEVICES="0,1,2,3"
     export OMP_PLACES="{0},{1},{2},{3}"
-    find_best ./multi_threaded_copy_overlapp/jacobi ${ARGS}
+    find_best ./multi_threaded_copy_overlapp/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=5
-    export CUDA_VISIBLE_DEVICES="3,2,1,5,7"         # 3xNV2, 2xNV1
-    export OMP_PLACES="{0},{1},{2},{20},{21}"
-    find_best ./multi_threaded_copy_overlapp/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4"
+    export OMP_PLACES="{0},{1},{2},{3},{4}"
+    find_best ./multi_threaded_copy_overlapp/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=6
-    export CUDA_VISIBLE_DEVICES="0,3,2,1,5,4"       # 5xNV2, 1xNV1
-    export OMP_PLACES="{0},{1},{2},{3},{20},{21}"
-    find_best ./multi_threaded_copy_overlapp/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5}"
+    find_best ./multi_threaded_copy_overlapp/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=7
-    export CUDA_VISIBLE_DEVICES="0,4,7,6,5,1,2"     # 6xNV2, 1xNV1
-    export OMP_PLACES="{0},{20},{21},{22},{23},{1},{2}"
-    find_best ./multi_threaded_copy_overlapp/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6}"
+    find_best ./multi_threaded_copy_overlapp/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=8
-    export CUDA_VISIBLE_DEVICES="0,3,2,1,5,6,7,4"   # 8xNV2, 0xNV1
-    export OMP_PLACES="{0},{1},{2},{3},{20},{21},{22},{23}"
-    find_best ./multi_threaded_copy_overlapp/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7}"
+    find_best ./multi_threaded_copy_overlapp/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=9
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7},{8}"
+    find_best ./multi_threaded_copy_overlapp/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=10
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7},{8},{9}"
+    find_best ./multi_threaded_copy_overlapp/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=11
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10}"
+    find_best ./multi_threaded_copy_overlapp/jacobi -csv -nx 18432 -ny 18432
+
+    NUM_GPUS=12
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11}"
+    find_best ./multi_threaded_copy_overlapp/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=13
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12}"
+    find_best ./multi_threaded_copy_overlapp/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=14
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12,13"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13}"
+    find_best ./multi_threaded_copy_overlapp/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=15
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14}"
+    find_best ./multi_threaded_copy_overlapp/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=16
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15}"
+    find_best ./multi_threaded_copy_overlapp/jacobi -csv -nx 18432 -ny 18432
 
 fi
 
 #multi threaded p2p
-if true; then
+if false; then
 
     NUM_GPUS=1
-    export CUDA_VISIBLE_DEVICES="0"                 # 0xNV2, 0xNV1
+    export CUDA_VISIBLE_DEVICES="0"
     export OMP_PLACES="{0}"
-    find_best ./multi_threaded_p2p/jacobi ${ARGS}
+    find_best ./multi_threaded_p2p/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=2
-    export CUDA_VISIBLE_DEVICES="0,3"               # 2xNV2, 0xNV1
+    export CUDA_VISIBLE_DEVICES="0,1"
     export OMP_PLACES="{0},{1}"
-    find_best ./multi_threaded_p2p/jacobi ${ARGS}
+    find_best ./multi_threaded_p2p/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=3
-    export CUDA_VISIBLE_DEVICES="0,3,2"             # 2xNV2, 1xNV1
+    export CUDA_VISIBLE_DEVICES="0,1,2"
     export OMP_PLACES="{0},{1},{2}"
-    find_best ./multi_threaded_p2p/jacobi ${ARGS}
+    find_best ./multi_threaded_p2p/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=4
-    export CUDA_VISIBLE_DEVICES="0,3,2,1"           # 3xNV2, 1xNV1
+    export CUDA_VISIBLE_DEVICES="0,1,2,3"
     export OMP_PLACES="{0},{1},{2},{3}"
-    find_best ./multi_threaded_p2p/jacobi ${ARGS}
+    find_best ./multi_threaded_p2p/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=5
-    export CUDA_VISIBLE_DEVICES="3,2,1,5,7"         # 3xNV2, 2xNV1
-    export OMP_PLACES="{0},{1},{2},{20},{21}"
-    find_best ./multi_threaded_p2p/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4"
+    export OMP_PLACES="{0},{1},{2},{3},{4}"
+    find_best ./multi_threaded_p2p/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=6
-    export CUDA_VISIBLE_DEVICES="0,3,2,1,5,4"       # 5xNV2, 1xNV1
-    export OMP_PLACES="{0},{1},{2},{3},{20},{21}"
-    find_best ./multi_threaded_p2p/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5}"
+    find_best ./multi_threaded_p2p/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=7
-    export CUDA_VISIBLE_DEVICES="0,4,7,6,5,1,2"     # 6xNV2, 1xNV1
-    export OMP_PLACES="{0},{20},{21},{22},{23},{1},{2}"
-    find_best ./multi_threaded_p2p/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6}"
+    find_best ./multi_threaded_p2p/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=8
-    export CUDA_VISIBLE_DEVICES="0,3,2,1,5,6,7,4"   # 8xNV2, 0xNV1
-    export OMP_PLACES="{0},{1},{2},{3},{20},{21},{22},{23}"
-    find_best ./multi_threaded_p2p/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7}"
+    find_best ./multi_threaded_p2p/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=9
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7},{8}"
+    find_best ./multi_threaded_p2p/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=10
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7},{8},{9}"
+    find_best ./multi_threaded_p2p/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=11
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10}"
+    find_best ./multi_threaded_p2p/jacobi -csv -nx 18432 -ny 18432
+
+    NUM_GPUS=12
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11}"
+    find_best ./multi_threaded_p2p/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=13
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12}"
+    find_best ./multi_threaded_p2p/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=14
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12,13"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13}"
+    find_best ./multi_threaded_p2p/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=15
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14}"
+    find_best ./multi_threaded_p2p/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=16
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15}"
+    find_best ./multi_threaded_p2p/jacobi -csv -nx 18432 -ny 18432
 
 fi
 
@@ -349,114 +553,287 @@ fi
 if true; then
     
     NUM_GPUS=1
-    export CUDA_VISIBLE_DEVICES="0"                 # 0xNV2, 0xNV1
+    export CUDA_VISIBLE_DEVICES="0"
     export OMP_PLACES="{0}"
-    find_best ./multi_threaded_p2p_opt/jacobi ${ARGS}
+    find_best ./multi_threaded_p2p_opt/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=2
-    export CUDA_VISIBLE_DEVICES="0,3"               # 2xNV2, 0xNV1
+    export CUDA_VISIBLE_DEVICES="0,1"
     export OMP_PLACES="{0},{1}"
-    find_best ./multi_threaded_p2p_opt/jacobi ${ARGS}
+    find_best ./multi_threaded_p2p_opt/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=3
-    export CUDA_VISIBLE_DEVICES="0,3,2"             # 2xNV2, 1xNV1
+    export CUDA_VISIBLE_DEVICES="0,1,2"
     export OMP_PLACES="{0},{1},{2}"
-    find_best ./multi_threaded_p2p_opt/jacobi ${ARGS}
+    find_best ./multi_threaded_p2p_opt/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=4
-    export CUDA_VISIBLE_DEVICES="0,3,2,1"           # 3xNV2, 1xNV1
+    export CUDA_VISIBLE_DEVICES="0,1,2,3"
     export OMP_PLACES="{0},{1},{2},{3}"
-    find_best ./multi_threaded_p2p_opt/jacobi ${ARGS}
+    find_best ./multi_threaded_p2p_opt/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=5
-    export CUDA_VISIBLE_DEVICES="3,2,1,5,7"         # 3xNV2, 2xNV1
-    export OMP_PLACES="{0},{1},{2},{20},{21}"
-    find_best ./multi_threaded_p2p_opt/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4"
+    export OMP_PLACES="{0},{1},{2},{3},{4}"
+    find_best ./multi_threaded_p2p_opt/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=6
-    export CUDA_VISIBLE_DEVICES="0,3,2,1,5,4"       # 5xNV2, 1xNV1
-    export OMP_PLACES="{0},{1},{2},{3},{20},{21}"
-    find_best ./multi_threaded_p2p_opt/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5}"
+    find_best ./multi_threaded_p2p_opt/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=7
-    export CUDA_VISIBLE_DEVICES="0,4,7,6,5,1,2"     # 6xNV2, 1xNV1
-    export OMP_PLACES="{0},{20},{21},{22},{23},{1},{2}"
-    find_best ./multi_threaded_p2p_opt/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6}"
+    find_best ./multi_threaded_p2p_opt/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=8
-    export CUDA_VISIBLE_DEVICES="0,3,2,1,5,6,7,4"   # 8xNV2, 0xNV1
-    export OMP_PLACES="{0},{1},{2},{3},{20},{21},{22},{23}"
-    find_best ./multi_threaded_p2p_opt/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7}"
+    find_best ./multi_threaded_p2p_opt/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=9
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7},{8}"
+    find_best ./multi_threaded_p2p_opt/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=10
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7},{8},{9}"
+    find_best ./multi_threaded_p2p_opt/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=11
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10}"
+    find_best ./multi_threaded_p2p_opt/jacobi -csv -nx 18432 -ny 18432
+
+    NUM_GPUS=12
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11}"
+    find_best ./multi_threaded_p2p_opt/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=13
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12}"
+    find_best ./multi_threaded_p2p_opt/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=14
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12,13"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13}"
+    find_best ./multi_threaded_p2p_opt/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=15
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14}"
+    find_best ./multi_threaded_p2p_opt/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=16
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15"
+    export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15}"
+    find_best ./multi_threaded_p2p_opt/jacobi -csv -nx 18432 -ny 18432
 fi
 
 if true; then
     
     NUM_GPUS=1
-    export CUDA_VISIBLE_DEVICES="0"                 # 0xNV2, 0xNV1
-    find_best mpirun -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:4:socket --bind-to core ./mpi/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./mpi/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=2
-    export CUDA_VISIBLE_DEVICES="0,3"               # 2xNV2, 0xNV1
-    find_best mpirun -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:4:socket --bind-to core ./mpi/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./mpi/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=3
-    export CUDA_VISIBLE_DEVICES="0,3,2"             # 2xNV2, 1xNV1
-    find_best mpirun -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:4:socket --bind-to core ./mpi/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1,2"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./mpi/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=4
-    export CUDA_VISIBLE_DEVICES="0,3,2,1"           # 3xNV2, 1xNV1
-    find_best mpirun -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:4:socket --bind-to core ./mpi/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1,2,3"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./mpi/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=5
-    export CUDA_VISIBLE_DEVICES="3,2,1,5,7"         # 3xNV2, 2xNV1
-    find_best mpirun -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:3:socket --bind-to core ./mpi/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./mpi/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=6
-    export CUDA_VISIBLE_DEVICES="0,3,2,1,5,4"       # 5xNV2, 1xNV1
-    find_best mpirun -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:4:socket --bind-to core ./mpi/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./mpi/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=7
-    export CUDA_VISIBLE_DEVICES="0,4,7,6,5,1,2"     # 6xNV2, 1xNV1
-    find_best mpirun -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:4:socket --bind-to core ./mpi/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./mpi/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=8
-    export CUDA_VISIBLE_DEVICES="0,3,2,1,5,6,7,4"   # 8xNV2, 0xNV1
-    find_best mpirun -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:4:socket --bind-to core ./mpi/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./mpi/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=9
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./mpi/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=10
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./mpi/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=11
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./mpi/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=12
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./mpi/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=13
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./mpi/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=14
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12,13"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./mpi/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=15
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./mpi/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=16
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./mpi/jacobi -csv -nx 18432 -ny 18432
     
 fi
 
 if true; then
     
     NUM_GPUS=1
-    export CUDA_VISIBLE_DEVICES="0"                 # 0xNV2, 0xNV1
-    find_best mpirun -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:4:socket --bind-to core ./mpi_overlapp/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./mpi_overlapp/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=2
-    export CUDA_VISIBLE_DEVICES="0,3"               # 2xNV2, 0xNV1
-    find_best mpirun -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:4:socket --bind-to core ./mpi_overlapp/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./mpi_overlapp/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=3
-    export CUDA_VISIBLE_DEVICES="0,3,2"             # 2xNV2, 1xNV1
-    find_best mpirun -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:4:socket --bind-to core ./mpi_overlapp/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1,2"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./mpi_overlapp/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=4
-    export CUDA_VISIBLE_DEVICES="0,3,2,1"           # 3xNV2, 1xNV1
-    find_best mpirun -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:4:socket --bind-to core ./mpi_overlapp/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1,2,3"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./mpi_overlapp/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=5
-    export CUDA_VISIBLE_DEVICES="3,2,1,5,7"         # 3xNV2, 2xNV1
-    find_best mpirun -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:3:socket --bind-to core ./mpi_overlapp/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./mpi_overlapp/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=6
-    export CUDA_VISIBLE_DEVICES="0,3,2,1,5,4"       # 5xNV2, 1xNV1
-    find_best mpirun -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:4:socket --bind-to core ./mpi_overlapp/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./mpi_overlapp/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=7
-    export CUDA_VISIBLE_DEVICES="0,4,7,6,5,1,2"     # 6xNV2, 1xNV1
-    find_best mpirun -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:4:socket --bind-to core ./mpi_overlapp/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./mpi_overlapp/jacobi -csv -nx 18432 -ny 18432
 
     NUM_GPUS=8
-    export CUDA_VISIBLE_DEVICES="0,3,2,1,5,6,7,4"   # 8xNV2, 0xNV1
-    find_best mpirun -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:4:socket --bind-to core ./mpi_overlapp/jacobi ${ARGS}
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./mpi_overlapp/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=9
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./mpi_overlapp/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=10
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./mpi_overlapp/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=11
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./mpi_overlapp/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=12
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./mpi_overlapp/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=13
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./mpi_overlapp/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=14
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12,13"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./mpi_overlapp/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=15
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./mpi_overlapp/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=16
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./mpi_overlapp/jacobi -csv -nx 18432 -ny 18432
+    
+fi
+
+if true; then
+    
+    export SHMEM_SYMMETRIC_SIZE=3221225472
+    NUM_GPUS=1
+    export CUDA_VISIBLE_DEVICES="0"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES -x SHMEM_SYMMETRIC_SIZE --map-by ppr:8:socket --bind-to core ./nvshmem/jacobi -csv -nx 18432 -ny 18432
+
+    NUM_GPUS=2
+    export CUDA_VISIBLE_DEVICES="0,1"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES -x SHMEM_SYMMETRIC_SIZE --map-by ppr:8:socket --bind-to core ./nvshmem/jacobi -csv -nx 18432 -ny 18432
+
+    NUM_GPUS=3
+    export CUDA_VISIBLE_DEVICES="0,1,2"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES -x SHMEM_SYMMETRIC_SIZE --map-by ppr:8:socket --bind-to core ./nvshmem/jacobi -csv -nx 18432 -ny 18432
+
+    NUM_GPUS=4
+    export CUDA_VISIBLE_DEVICES="0,1,2,3"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES -x SHMEM_SYMMETRIC_SIZE --map-by ppr:8:socket --bind-to core ./nvshmem/jacobi -csv -nx 18432 -ny 18432
+
+    NUM_GPUS=5
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES -x SHMEM_SYMMETRIC_SIZE --map-by ppr:8:socket --bind-to core ./nvshmem/jacobi -csv -nx 18432 -ny 18432
+
+    NUM_GPUS=6
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES -x SHMEM_SYMMETRIC_SIZE --map-by ppr:8:socket --bind-to core ./nvshmem/jacobi -csv -nx 18432 -ny 18432
+
+    NUM_GPUS=7
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES -x SHMEM_SYMMETRIC_SIZE --map-by ppr:8:socket --bind-to core ./nvshmem/jacobi -csv -nx 18432 -ny 18432
+
+    NUM_GPUS=8
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES -x SHMEM_SYMMETRIC_SIZE --map-by ppr:8:socket --bind-to core ./nvshmem/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=9
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES -x SHMEM_SYMMETRIC_SIZE --map-by ppr:8:socket --bind-to core ./nvshmem/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=10
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES -x SHMEM_SYMMETRIC_SIZE --map-by ppr:8:socket --bind-to core ./nvshmem/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=11
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES -x SHMEM_SYMMETRIC_SIZE --map-by ppr:8:socket --bind-to core ./nvshmem/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=12
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES -x SHMEM_SYMMETRIC_SIZE --map-by ppr:8:socket --bind-to core ./nvshmem/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=13
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES -x SHMEM_SYMMETRIC_SIZE --map-by ppr:8:socket --bind-to core ./nvshmem/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=14
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12,13"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES -x SHMEM_SYMMETRIC_SIZE --map-by ppr:8:socket --bind-to core ./nvshmem/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=15
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES -x SHMEM_SYMMETRIC_SIZE --map-by ppr:8:socket --bind-to core ./nvshmem/jacobi -csv -nx 18432 -ny 18432
+    
+    NUM_GPUS=16
+    export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15"
+    find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES -x SHMEM_SYMMETRIC_SIZE --map-by ppr:8:socket --bind-to core ./nvshmem/jacobi -csv -nx 18432 -ny 18432
     
 fi

@@ -2,6 +2,7 @@
 NP ?= 1
 NVCC=nvcc
 MPICXX=mpicxx
+MPIRUN ?= mpirun
 GENCODE_SM30	:= -gencode arch=compute_30,code=sm_30
 GENCODE_SM35	:= -gencode arch=compute_35,code=sm_35
 GENCODE_SM37	:= -gencode arch=compute_37,code=sm_37
@@ -29,10 +30,10 @@ clean:
 	rm -f jacobi jacobi_kernels.o *.nvprof
 
 memcheck: jacobi
-	mpirun -np $(NP) cuda-memcheck ./jacobi
+	$(MPIRUN) -np $(NP) cuda-memcheck ./jacobi
 
 run: jacobi
-	mpirun -np $(NP) ./jacobi
+	$(MPIRUN) -np $(NP) ./jacobi
 
 profile: jacobi
-	mpirun -np $(NP) nvprof -o jacobi.%q{OMPI_COMM_WORLD_RANK}.nvprof --process-name "rank %q{OMPI_COMM_WORLD_RANK}" --context-name "rank %q{OMPI_COMM_WORLD_RANK}"  ./jacobi -niter 10
+	$(MPIRUN) -np $(NP) nvprof -o jacobi.%q{OMPI_COMM_WORLD_RANK}.nvprof --process-name "rank %q{OMPI_COMM_WORLD_RANK}" --context-name "rank %q{OMPI_COMM_WORLD_RANK}"  ./jacobi -niter 10

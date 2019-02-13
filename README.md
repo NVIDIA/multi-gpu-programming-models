@@ -8,14 +8,16 @@ This project implements the well known multi GPU Jacobi solver with different mu
 * Multi Threaded with OpenMP relying on transparent peer mappings with Unified Memory for inter GPU communication (`multi_threaded_um`)
 * Multi Process with MPI using CUDA-aware MPI for inter GPU communication (`mpi`)
 * Multi Process with MPI using CUDA-aware MPI for inter GPU communication with overlapping communication (`mpi_overlapp`)
+* Multi Process with MPI and NVSHMEM using using NVSHMEM for inter GPU communication (`nvshmem`)
 
 Each variant is a stand alone Makefile project and all variants have been described in the GTC EU 2018 Talk [Multi GPU Programming Models](http://on-demand-gtc.gputechconf.com/gtc-quicklink/eCVNLP6)
 
 # Requirements
 * CUDA: verison 9.2 or later is required by all variants.
 * OpenMP capable compiler: Required by the Multi Threaded variants. The examples have been developed and tested with gcc.
-* CUDA-aware MPI: Required by the MPI variants. The examples have been developed and tested with OpenMPI.
+* CUDA-aware MPI: Required by the MPI and NVSHMEM variants. The examples have been developed and tested with OpenMPI.
 * CUB: Optional for optimized residual reductions. Set CUB_HOME to your cub installation directory. The examples have been developed and tested with cub 1.8.0.
+* NVSHMEM: Required by the NVSHMEM variant.
 
 # Building 
 Each variant come with a Makefile and can be build by simply issuing make, e.g. 
@@ -35,7 +37,7 @@ All variant have the following command line options
 * `-ny`: Size of the domain in y direction (default 7168)
 * `-csv`: Print performance results as -csv
 
-The provided script `bench.sh` contains some examples executing all the benchmarks presented in the GTC EU 2017 Talk Multi GPU Programming Models.
+The provided script `bench.sh` contains some examples executing all the benchmarks presented in the GTC EU 2018 Talk Multi GPU Programming Models.
 
 # Developers guide
 The code applies the style guide implemented in [`.clang-format`](.clang-format) file. [`clang-format`](https://clang.llvm.org/docs/ClangFormat.html) version 7 or later should be used to format the code prior to submitting it. E.g. with
