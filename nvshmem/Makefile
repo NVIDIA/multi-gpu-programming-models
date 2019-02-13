@@ -2,6 +2,12 @@
 NP ?= 1
 NVCC=nvcc
 MPIRUN ?= mpirun
+ifndef NVSHMEM_HOME
+$(error NVSHMEM_HOME is not set)
+endif
+ifndef MPI_HOME
+$(error MPI_HOME is not set)
+endif
 GENCODE_SM30	:= -gencode arch=compute_30,code=sm_30
 GENCODE_SM35	:= -gencode arch=compute_35,code=sm_35
 GENCODE_SM37	:= -gencode arch=compute_37,code=sm_37
