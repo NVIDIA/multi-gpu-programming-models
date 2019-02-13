@@ -17,7 +17,7 @@ Each variant is a stand alone Makefile project and all variants have been descri
 * OpenMP capable compiler: Required by the Multi Threaded variants. The examples have been developed and tested with gcc.
 * CUDA-aware MPI: Required by the MPI and NVSHMEM variants. The examples have been developed and tested with OpenMPI.
 * CUB: Optional for optimized residual reductions. Set CUB_HOME to your cub installation directory. The examples have been developed and tested with cub 1.8.0.
-* NVSHMEM: Required by the NVSHMEM variant.
+* NVSHMEM: Required by the NVSHMEM variant. Please reach out to nvshmem@nvidia.com for an early access to NVSHMEM.
 
 # Building 
 Each variant come with a Makefile and can be build by simply issuing make, e.g. 
