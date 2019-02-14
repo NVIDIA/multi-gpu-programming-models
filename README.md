@@ -1,15 +1,15 @@
 # Multi GPU Programming Models
 This project implements the well known multi GPU Jacobi solver with different multi GPU Programming Models:
-* Single Threaded using cudaMemcpy of inter GPU communication (`single_threaded_copy`)
-* Multi Threaded with OpenMP using cudaMemcpy for inter GPU communication (`multi_threaded_copy`)
-* Multi Threaded with OpenMP using cudaMemcpy for itner GPU communication with overlapping communication (`multi_threaded_copy_overlapp`)
-* Multi Threaded with OpenMP using GPUDirect P2P mappings for inter GPU communication (`multi_threaded_p2p`)
-* Multi Threaded with OpenMP using GPUDirect P2P mappings for inter GPU communication with delayed norm execution (`multi_threaded_p2p_opt`)
-* Multi Threaded with OpenMP relying on transparent peer mappings with Unified Memory for inter GPU communication (`multi_threaded_um`)
-* Multi Process with MPI using CUDA-aware MPI for inter GPU communication (`mpi`)
-* Multi Process with MPI using CUDA-aware MPI for inter GPU communication with overlapping communication (`mpi_overlapp`)
-* Multi Process with MPI and NVSHMEM using NVSHMEM for inter GPU communication (`nvshmem`)
-* Multi Process with MPI and NVSHMEM using NVSHMEM for inter GPU communication with NVSHMEM extension API (`nvshmem_opt`)
+* `single_threaded_copy`           Single Threaded using cudaMemcpy of inter GPU communication
+* `multi_threaded_copy`            Multi Threaded with OpenMP using cudaMemcpy for inter GPU communication
+* `multi_threaded_copy_overlapp`   Multi Threaded with OpenMP using cudaMemcpy for itner GPU communication with overlapping communication
+* `multi_threaded_p2p`             Multi Threaded with OpenMP using GPUDirect P2P mappings for inter GPU communication
+* `multi_threaded_p2p_opt`         Multi Threaded with OpenMP using GPUDirect P2P mappings for inter GPU communication with delayed norm execution
+* `multi_threaded_um`              Multi Threaded with OpenMP relying on transparent peer mappings with Unified Memory for inter GPU communication
+* `mpi`                            Multi Process with MPI using CUDA-aware MPI for inter GPU communication
+* `mpi_overlapp`                   Multi Process with MPI using CUDA-aware MPI for inter GPU communication with overlapping communication
+* `nvshmem`                        Multi Process with MPI and NVSHMEM using NVSHMEM for inter GPU communication.
+* `nvshmem_opt`                    Multi Process with MPI and NVSHMEM using NVSHMEM for inter GPU communication with NVSHMEM extension API
 
 Each variant is a stand alone Makefile project and all variants have been described in the GTC EU 2018 Talk [Multi GPU Programming Models](http://on-demand-gtc.gputechconf.com/gtc-quicklink/eCVNLP6)
 
