@@ -98,8 +98,27 @@ const int num_colors = sizeof(colors) / sizeof(uint32_t);
 
 typedef float real;
 constexpr real tol = 1.0e-8;
-
 const real PI = 2.0 * std::asin(1.0);
+
+
+/* This kernel implements neighborhood synchronization for Jacobi. It updates
+   the neighbor PEs about its arrival and waits for notification from them. */
+__global__ void syncneighborhood_kernel(int my_pe, int num_pes, volatile long *sync_arr,
+                                                  long counter) {
+    int next_rank = (my_pe + 1) % num_pes;
+    int prev_rank = (my_pe == 0) ? num_pes - 1 : my_pe - 1;
+    shmem_quiet(); /* To ensure all prior shmem operations have been completed */
+
+    /* Notify neighbors about arrival */
+    shmem_long_p((long *)sync_arr, counter, next_rank);
+    shmem_long_p((long *)sync_arr + 1, counter, prev_rank);
+
+    /* Wait for neighbors notification */
+    while (counter > *(sync_arr))
+        ;
+    while (counter > *(sync_arr + 1))
+        ;
+}
 
 __global__ void initialize_boundaries(real* __restrict__ const a_new, real* __restrict__ const a,
                                       const real pi, const int offset, const int nx,
@@ -348,6 +367,14 @@ int main(int argc, char* argv[]) {
     double start = MPI_Wtime();
     PUSH_RANGE("Jacobi solve", 0)
     bool l2_norm_greater_than_tol = true;
+    
+    /* Used by syncneighborhood kernel */
+    long *sync_arr = NULL;
+    sync_arr = (long *)shmem_malloc(2 * sizeof(long));
+    cudaMemsetAsync(sync_arr, 0, 2 * sizeof(long), compute_stream);
+    cudaStreamSynchronize(compute_stream);
+    long synccounter = 1;
+    
 
     while (l2_norm_greater_than_tol && iter < iter_max) {
         // on new iteration: old current vars are now previous vars, old
@@ -361,8 +388,13 @@ int main(int argc, char* argv[]) {
                 a_new, a, l2_norm_bufs[curr].d, iy_start, iy_end, nx, top_pe, iy_end_top, bottom_pe,
                 iy_start_bottom);
         CUDA_RT_CALL(cudaGetLastError());
-
-        shmemx_barrier_all_on_stream(compute_stream);
+        
+        /* Instead of using shmemx_barrier_all_on_stream, we are using a custom implementation
+           of barrier that just synchronizes with the neighbor PEs that is the PEs with whom a PE
+           communicates. This will perform faster than a global barrier that would do redundant
+           synchronization for this application. */
+        syncneighborhood_kernel<<<1, 1, 0, compute_stream>>>(mype, npes, sync_arr, synccounter);
+        synccounter++;
 
         // perform L2 norm calculation
         if ((iter % nccheck) == 0 || (!csv && (iter % 100) == 0)) {
@@ -448,6 +480,7 @@ int main(int argc, char* argv[]) {
 
     shmem_free(a);
     shmem_free(a_new);
+    shmem_free(sync_arr);
 
     CUDA_RT_CALL(cudaEventDestroy(reset_l2_norm_done[1]));
     CUDA_RT_CALL(cudaEventDestroy(reset_l2_norm_done[0]));
