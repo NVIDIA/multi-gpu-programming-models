@@ -351,8 +351,8 @@ int main(int argc, char* argv[]) {
         if (!csv) printf("Jacobi relaxation: %d iterations on %d x %d mesh\n", iter_max, ny, nx);
     }
 
-    constexpr int dim_block_x = 32;
-    constexpr int dim_block_y = 4;
+    constexpr int dim_block_x = 1024;
+    constexpr int dim_block_y = 1;
     dim3 dim_grid((nx - 1) / dim_block_x + 1, (ny - 1) / (npes * dim_block_y) + 1, 1);
 
     int iter = 0;
@@ -536,8 +536,8 @@ double single_gpu(const int nx, const int ny, const int iter_max, real* const a_
             "check every %d iterations\n",
             iter_max, ny, nx, nccheck);
 
-    constexpr int dim_block_x = 32;
-    constexpr int dim_block_y = 4;
+    constexpr int dim_block_x = 1024;
+    constexpr int dim_block_y = 1;
     dim3 dim_grid((nx - 1) / dim_block_x + 1, (ny - 1) / dim_block_y + 1, 1);
 
     int iter = 0;
