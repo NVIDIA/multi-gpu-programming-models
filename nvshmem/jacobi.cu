@@ -447,7 +447,8 @@ int main(int argc, char* argv[]) {
 
     CUDA_RT_CALL(cudaFreeHost(a_h));
     CUDA_RT_CALL(cudaFreeHost(a_ref_h));
-
+    
+    shmem_finalize();
     MPI_CALL(MPI_Finalize());
 
     return (result_correct == 1) ? 0 : 1;
