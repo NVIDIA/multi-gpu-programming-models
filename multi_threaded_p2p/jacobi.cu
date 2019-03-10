@@ -192,9 +192,6 @@ int main(int argc, char* argv[]) {
         real* l2_norm_d;
         real* l2_norm_h;
 
-        // Ensure correctness if ny%size != 0
-        int chunk_size = std::ceil((1.0 * (ny - 2)) / num_devices);
-
         int dev_id = omp_get_thread_num();
 
         CUDA_RT_CALL(cudaSetDevice(dev_id));
@@ -206,6 +203,8 @@ int main(int argc, char* argv[]) {
             runtime_serial = single_gpu(nx, ny, iter_max, a_ref_h, nccheck, !csv);
         }
 #pragma omp barrier
+        // Ensure correctness if ny%size != 0
+        int chunk_size = std::ceil((1.0 * (ny - 2)) / num_devices);
 
         const int top = dev_id > 0 ? dev_id - 1 : (num_devices - 1);
         const int bottom = (dev_id + 1) % num_devices;

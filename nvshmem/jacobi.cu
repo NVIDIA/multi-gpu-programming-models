@@ -252,14 +252,14 @@ int main(int argc, char* argv[]) {
 
     l2_norm_buf l2_norm_bufs[2];
 
-    // Ensure correctness if ny%size != 0
-    int chunk_size = std::ceil((1.0 * ny) / npes);
-
     CUDA_RT_CALL(cudaMallocHost(&a_ref_h, nx * (ny + 2) * sizeof(real)));
     CUDA_RT_CALL(cudaMallocHost(&a_h, nx * (ny + 2) * sizeof(real)));
     runtime_serial = single_gpu(nx, ny, iter_max, a_ref_h, nccheck, !csv && (0 == mype), mype);
 
     shmem_barrier_all();
+
+    // Ensure correctness if ny%size != 0
+    int chunk_size = std::ceil((1.0 * ny) / npes);
 
     a = (real*)shmem_malloc(nx * (chunk_size + 2) * sizeof(real));
     a_new = (real*)shmem_malloc(nx * (chunk_size + 2) * sizeof(real));

@@ -147,9 +147,6 @@ int main(int argc, char* argv[]) {
     const int ny = get_argval<int>(argv, argv + argc, "-ny", 7168);
     const bool csv = get_arg(argv, argv + argc, "-csv");
 
-    // Ensure correctness if ny%size != 0
-    int chunk_size = std::ceil((1.0 * (ny - 2)) / size);
-
     int local_rank = -1;
     {
         MPI_Comm local_comm;
@@ -169,6 +166,9 @@ int main(int argc, char* argv[]) {
     real* a_h;
     CUDA_RT_CALL(cudaMallocHost(&a_h, nx * ny * sizeof(real)));
     double runtime_serial = single_gpu(nx, ny, iter_max, a_ref_h, nccheck, !csv && (0 == rank));
+
+    // Ensure correctness if ny%size != 0
+    int chunk_size = std::ceil((1.0 * (ny - 2)) / size);
 
     real* a;
     CUDA_RT_CALL(cudaMalloc(&a, nx * (chunk_size + 2) * sizeof(real)));

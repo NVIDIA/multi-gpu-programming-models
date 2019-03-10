@@ -174,10 +174,10 @@ int main(int argc, char* argv[]) {
     int iy_start[MAX_NUM_DEVICES];
     int iy_end[MAX_NUM_DEVICES];
 
+    int chunk_size[MAX_NUM_DEVICES];
+
     int num_devices = 0;
     CUDA_RT_CALL(cudaGetDeviceCount(&num_devices));
-    // Ensure correctness if ny%size != 0
-    int chunk_size = std::ceil((1.0 * (ny - 2)) / num_devices);
     for (int dev_id = 0; dev_id < num_devices; ++dev_id) {
         CUDA_RT_CALL(cudaSetDevice(dev_id));
         CUDA_RT_CALL(cudaFree(0));
@@ -188,15 +188,18 @@ int main(int argc, char* argv[]) {
             runtime_serial = single_gpu(nx, ny, iter_max, a_ref_h, nccheck, !csv);
         }
 
-        CUDA_RT_CALL(cudaMalloc(a + dev_id, nx * (chunk_size + 2) * sizeof(real)));
-        CUDA_RT_CALL(cudaMalloc(a_new + dev_id, nx * (chunk_size + 2) * sizeof(real)));
+        // Ensure correctness if ny%size != 0
+        chunk_size[dev_id] = std::ceil((1.0 * (ny - 2)) / num_devices);
 
-        CUDA_RT_CALL(cudaMemset(a[dev_id], 0, nx * (chunk_size + 2) * sizeof(real)));
-        CUDA_RT_CALL(cudaMemset(a_new[dev_id], 0, nx * (chunk_size + 2) * sizeof(real)));
+        CUDA_RT_CALL(cudaMalloc(a + dev_id, nx * (chunk_size[dev_id] + 2) * sizeof(real)));
+        CUDA_RT_CALL(cudaMalloc(a_new + dev_id, nx * (chunk_size[dev_id] + 2) * sizeof(real)));
+
+        CUDA_RT_CALL(cudaMemset(a[dev_id], 0, nx * (chunk_size[dev_id] + 2) * sizeof(real)));
+        CUDA_RT_CALL(cudaMemset(a_new[dev_id], 0, nx * (chunk_size[dev_id] + 2) * sizeof(real)));
 
         // Calculate local domain boundaries
-        int iy_start_global = dev_id * chunk_size + 1;
-        int iy_end_global = iy_start_global + chunk_size - 1;
+        int iy_start_global = dev_id * chunk_size[dev_id] + 1;
+        int iy_end_global = iy_start_global + chunk_size[dev_id] - 1;
         // Do not process boundaries
         iy_end_global = std::min(iy_end_global, ny - 2);
 
@@ -205,7 +208,7 @@ int main(int argc, char* argv[]) {
 
         // Set diriclet boundary conditions on left and right boarder
         initialize_boundaries<<<(ny / num_devices) / 128 + 1, 128>>>(
-            a[dev_id], a_new[dev_id], PI, iy_start_global - 1, nx, (chunk_size + 2), ny);
+            a[dev_id], a_new[dev_id], PI, iy_start_global - 1, nx, (chunk_size[dev_id] + 2), ny);
         CUDA_RT_CALL(cudaGetLastError());
         CUDA_RT_CALL(cudaDeviceSynchronize());
 
@@ -269,9 +272,6 @@ int main(int argc, char* argv[]) {
 
     constexpr int dim_block_x = 32;
     constexpr int dim_block_y = 4;
-    dim3 dim_grid((nx + dim_block_x - 1) / dim_block_x,
-                  (chunk_size + dim_block_y - 1) / dim_block_y, 1);
-
     int iter = 0;
     bool calculate_norm;
     real l2_norm = 1.0;
@@ -297,6 +297,9 @@ int main(int argc, char* argv[]) {
                 cudaStreamWaitEvent(compute_stream[dev_id], push_bottom_done[(iter % 2)][top], 0));
 
             calculate_norm = (iter % nccheck) == 0 || (!csv && (iter % 100) == 0);
+            dim3 dim_grid((nx + dim_block_x - 1) / dim_block_x,
+                          (chunk_size[dev_id] + dim_block_y - 1) / dim_block_y, 1);
+
             jacobi_kernel<dim_block_x, dim_block_y>
                 <<<dim_grid, {dim_block_x, dim_block_y, 1}, 0, compute_stream[dev_id]>>>(
                     a_new[dev_id], a[dev_id], l2_norm_d[dev_id], iy_start[dev_id], iy_end[dev_id],
@@ -350,9 +353,9 @@ int main(int argc, char* argv[]) {
     int offset = nx;
     for (int dev_id = 0; dev_id < num_devices; ++dev_id) {
         CUDA_RT_CALL(cudaMemcpy(a_h + offset, a[dev_id] + nx,
-                                std::min((nx * ny) - offset, nx * chunk_size) * sizeof(real),
+                                std::min((nx * ny) - offset, nx * chunk_size[dev_id]) * sizeof(real),
                                 cudaMemcpyDeviceToHost));
-        offset += std::min(chunk_size * nx, (nx * ny) - offset);
+        offset += std::min(chunk_size[dev_id] * nx, (nx * ny) - offset);
     }
 
     bool result_correct = true;
