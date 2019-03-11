@@ -193,8 +193,6 @@ int main(int argc, char* argv[]) {
         iy_start_global = num_ranks_low * chunk_size_low + (rank - num_ranks_low) * chunk_size_high + 1;
     }
     int iy_end_global = iy_start_global + chunk_size - 1; /* My last index in the global array */
-    // Do not process boundaries
-    iy_end_global = std::min(iy_end_global, ny - 2);
 
     int iy_start = 1;
     int iy_end = (iy_end_global - iy_start_global + 1) + iy_start;
