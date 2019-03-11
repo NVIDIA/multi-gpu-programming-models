@@ -287,18 +287,30 @@ int main(int argc, char* argv[]) {
     runtime_serial = single_gpu(nx, ny, iter_max, a_ref_h, nccheck, !csv && (0 == mype), mype);
 
     shmem_barrier_all();
-    // Ensure correctness if ny%size != 0
-    int chunk_size = std::ceil((1.0 * ny) / npes);
+    int chunk_size, chunk_size_low, chunk_size_high;
+    int num_ranks_low; /* Number of ranks with chunk_size = chunk_size_low */
+    chunk_size_low = ny / npes;
+    chunk_size_high = chunk_size_low + 1;
+    num_ranks_low = npes * chunk_size_low + npes - ny;
+    if (mype < num_ranks_low)
+        chunk_size = chunk_size_low;
+    else
+        chunk_size = chunk_size_high;
 
-    a = (real*)shmem_malloc(nx * (chunk_size + 2) * sizeof(real));
-    a_new = (real*)shmem_malloc(nx * (chunk_size + 2) * sizeof(real));
+    a = (real*)shmem_malloc(nx * (chunk_size_high + 2) * sizeof(real));
+    a_new = (real*)shmem_malloc(nx * (chunk_size_high + 2) * sizeof(real));
 
     cudaMemset(a, 0, nx * (chunk_size + 2) * sizeof(real));
     cudaMemset(a_new, 0, nx * (chunk_size + 2) * sizeof(real));
 
     // Calculate local domain boundaries
-    int iy_start_global = mype * chunk_size + 1;
-    int iy_end_global = iy_start_global + chunk_size - 1;
+    int iy_start_global; /* My start index in the global array */
+    if (mype < num_ranks_low) {
+        iy_start_global = mype * chunk_size_low + 1;
+    } else {
+        iy_start_global = num_ranks_low * chunk_size_low + (mype - num_ranks_low) * chunk_size_high + 1;
+    }
+    int iy_end_global = iy_start_global + chunk_size - 1; /* My last index in the global array */
     // do not process boundaries
     iy_end_global = std::min(iy_end_global, ny - 2);
 
@@ -309,16 +321,8 @@ int main(int argc, char* argv[]) {
     int top_pe = mype > 0 ? mype - 1 : (npes - 1);
     int bottom_pe = (mype + 1) % npes;
 
-    int iy_end_top = (mype == 0) ? chunk_size - (ny % npes) + 1 : chunk_size + 1;
+    int iy_end_top = (top_pe < num_ranks_low) ? chunk_size_low + 1 : chunk_size_high + 1;
     int iy_start_bottom = 0;
-
-    // ensure that iy_end_top == top_iy_end + 2
-    if (mype == npes - 1) MPI_Send(&iy_end, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
-    if (mype == 0) {
-        int top_iy_end = 0;
-        MPI_Recv(&top_iy_end, 1, MPI_INT, npes - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        if (top_iy_end >= iy_end_top) iy_end_top = top_iy_end + 2;
-    }
 
     // Set diriclet boundary conditions on left and right boundary
     initialize_boundaries<<<(ny / npes) / 128 + 1, 128>>>(a, a_new, PI, iy_start_global - 1, nx,
