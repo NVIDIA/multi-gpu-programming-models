@@ -207,8 +207,15 @@ int main(int argc, char* argv[]) {
             runtime_serial = single_gpu(nx, ny, iter_max, a_ref_h, nccheck, !csv);
         }
 #pragma omp barrier
-        // Ensure correctness if ny%size != 0
-        int chunk_size = std::ceil((1.0 * (ny - 2)) / num_devices);
+        int chunk_size, chunk_size_low, chunk_size_high;
+        int num_ranks_low; /* Number of ranks with chunk_size = chunk_size_low */
+        chunk_size_low = (ny - 2) / num_devices;
+        chunk_size_high = chunk_size_low + 1;
+        num_ranks_low = num_devices * chunk_size_low + num_devices - (ny - 2);
+        if (dev_id < num_ranks_low)
+            chunk_size = chunk_size_low;
+        else
+            chunk_size = chunk_size_high;
 
         const int top = dev_id > 0 ? dev_id - 1 : (num_devices - 1);
         const int bottom = (dev_id + 1) % num_devices;
@@ -249,8 +256,13 @@ int main(int argc, char* argv[]) {
             CUDA_RT_CALL(cudaMemset(a_new[dev_id], 0, nx * (chunk_size + 2) * sizeof(real)));
 
             // Calculate local domain boundaries
-            int iy_start_global = dev_id * chunk_size + 1;
-            int iy_end_global = iy_start_global + chunk_size - 1;
+            int iy_start_global; /* My start index in the global array */
+            if (dev_id < num_ranks_low) {
+                iy_start_global = dev_id * chunk_size_low + 1;
+            } else {
+                iy_start_global = num_ranks_low * chunk_size_low + (dev_id - num_ranks_low) * chunk_size_high + 1;
+            }
+            int iy_end_global = iy_start_global + chunk_size - 1; /* My last index in the global array */
             // Do not process boundaries
             iy_end_global = std::min(iy_end_global, ny - 2);
 
