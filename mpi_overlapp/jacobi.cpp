@@ -167,8 +167,15 @@ int main(int argc, char* argv[]) {
     CUDA_RT_CALL(cudaMallocHost(&a_h, nx * ny * sizeof(real)));
     double runtime_serial = single_gpu(nx, ny, iter_max, a_ref_h, nccheck, !csv && (0 == rank));
 
-    // Ensure correctness if ny%size != 0
-    int chunk_size = std::ceil((1.0 * (ny - 2)) / size);
+    int chunk_size, chunk_size_low, chunk_size_high;
+    int num_ranks_low; /* Number of ranks with chunk_size = chunk_size_low */
+    chunk_size_low = (ny - 2) / size;
+    chunk_size_high = chunk_size_low + 1;
+    num_ranks_low = size * chunk_size_low + size - (ny - 2);
+    if (rank < num_ranks_low)
+        chunk_size = chunk_size_low;
+    else
+        chunk_size = chunk_size_high;
 
     real* a;
     CUDA_RT_CALL(cudaMalloc(&a, nx * (chunk_size + 2) * sizeof(real)));
@@ -179,8 +186,13 @@ int main(int argc, char* argv[]) {
     CUDA_RT_CALL(cudaMemset(a_new, 0, nx * (chunk_size + 2) * sizeof(real)));
 
     // Calculate local domain boundaries
-    int iy_start_global = rank * chunk_size + 1;
-    int iy_end_global = iy_start_global + chunk_size - 1;
+    int iy_start_global; /* My start index in the global array */
+    if (rank < num_ranks_low) {
+        iy_start_global = rank * chunk_size_low + 1;
+    } else {
+        iy_start_global = num_ranks_low * chunk_size_low + (rank - num_ranks_low) * chunk_size_high + 1;
+    }
+    int iy_end_global = iy_start_global + chunk_size - 1; /* My last index in the global array */
     // Do not process boundaries
     iy_end_global = std::min(iy_end_global, ny - 2);
 
