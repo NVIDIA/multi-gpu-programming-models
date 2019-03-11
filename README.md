@@ -1,6 +1,6 @@
 # Multi GPU Programming Models
 This project implements the well known multi GPU Jacobi solver with different multi GPU Programming Models:
-* `single_threaded_copy`           Single Threaded using cudaMemcpy of inter GPU communication
+* `single_threaded_copy`           Single Threaded using cudaMemcpy for inter GPU communication
 * `multi_threaded_copy`            Multi Threaded with OpenMP using cudaMemcpy for inter GPU communication
 * `multi_threaded_copy_overlapp`   Multi Threaded with OpenMP using cudaMemcpy for itner GPU communication with overlapping communication
 * `multi_threaded_p2p`             Multi Threaded with OpenMP using GPUDirect P2P mappings for inter GPU communication
