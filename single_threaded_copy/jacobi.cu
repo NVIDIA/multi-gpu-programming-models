@@ -189,7 +189,15 @@ int main(int argc, char* argv[]) {
         }
 
         // Ensure correctness if ny%size != 0
-        chunk_size[dev_id] = std::ceil((1.0 * (ny - 2)) / num_devices);
+        int chunk_size_low, chunk_size_high;
+        int num_ranks_low; /* Number of ranks with chunk_size = chunk_size_low */
+        chunk_size_low = (ny - 2) / num_devices;
+        chunk_size_high = chunk_size_low + 1;
+        num_ranks_low = num_devices * chunk_size_low + num_devices - (ny - 2);
+        if (dev_id < num_ranks_low)
+            chunk_size[dev_id] = chunk_size_low;
+        else
+            chunk_size[dev_id] = chunk_size_high;
 
         CUDA_RT_CALL(cudaMalloc(a + dev_id, nx * (chunk_size[dev_id] + 2) * sizeof(real)));
         CUDA_RT_CALL(cudaMalloc(a_new + dev_id, nx * (chunk_size[dev_id] + 2) * sizeof(real)));
@@ -198,8 +206,13 @@ int main(int argc, char* argv[]) {
         CUDA_RT_CALL(cudaMemset(a_new[dev_id], 0, nx * (chunk_size[dev_id] + 2) * sizeof(real)));
 
         // Calculate local domain boundaries
-        int iy_start_global = dev_id * chunk_size[dev_id] + 1;
-        int iy_end_global = iy_start_global + chunk_size[dev_id] - 1;
+        int iy_start_global; /* My start index in the global array */
+        if (dev_id < num_ranks_low) {
+            iy_start_global = dev_id * chunk_size_low + 1;
+        } else {
+            iy_start_global = num_ranks_low * chunk_size_low + (dev_id - num_ranks_low) * chunk_size_high + 1;
+        }
+        int iy_end_global = iy_start_global + chunk_size[dev_id] - 1; /* My last index in the global array */
         // Do not process boundaries
         iy_end_global = std::min(iy_end_global, ny - 2);
 
