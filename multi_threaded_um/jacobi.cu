@@ -203,11 +203,23 @@ int main(int argc, char* argv[]) {
         CUDA_RT_CALL(cudaSetDevice(dev_id));
         CUDA_RT_CALL(cudaFree(0));
 
-        // Ensure correctness if ny%size != 0
-        int chunk_size = std::ceil((1.0 * ny) / num_devices);
+        int chunk_size, chunk_size_low, chunk_size_high;
+        int num_ranks_low; /* Number of ranks with chunk_size = chunk_size_low */
+        chunk_size_low = ny / num_devices;
+        chunk_size_high = chunk_size_low + 1;
+        num_ranks_low = num_devices * chunk_size_low + num_devices - ny;
+        if (dev_id < num_ranks_low)
+            chunk_size = chunk_size_low;
+        else
+            chunk_size = chunk_size_high;
 
         // Calculate local domain boundaries
-        int iy_start = dev_id * chunk_size;
+        int iy_start;
+        if (dev_id < num_ranks_low) {
+            iy_start = dev_id * chunk_size_low;
+        } else {
+            iy_start = num_ranks_low * chunk_size_low + (dev_id - num_ranks_low) * chunk_size_high;
+        }
         int iy_end = iy_start + chunk_size;
         // Do not process boundaries
         iy_start = std::max(iy_start, 1);
