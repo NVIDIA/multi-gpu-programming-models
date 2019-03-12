@@ -216,7 +216,8 @@ int main(int argc, char* argv[]) {
         MPI_CALL(MPI_Comm_rank(local_comm, &local_rank));
         MPI_CALL(MPI_Comm_size(local_comm, &local_size));
         if (num_devices < local_size) {
-            fprintf(stderr, "ERROR: Number of devices is less numer of PEs \
+            fprintf(stderr,
+                    "ERROR: Number of devices is less numer of PEs \
                     on the node!\n");
             MPI_CALL(MPI_Comm_free(&local_comm));
             MPI_CALL(MPI_Info_free(&info));
@@ -267,26 +268,30 @@ int main(int argc, char* argv[]) {
     // To calculate the number of ranks that need to compute an extra row,
     // the following formula is derived from this equation:
     // num_ranks_low * chunk_size_low + (size - num_ranks_low) * (chunk_size_low + 1) = ny - 2
-    int num_ranks_low = npes * chunk_size_low + npes - ny; // Number of ranks with chunk_size = chunk_size_low
+    int num_ranks_low =
+        npes * chunk_size_low + npes - ny;  // Number of ranks with chunk_size = chunk_size_low
     if (mype < num_ranks_low)
         chunk_size = chunk_size_low;
     else
         chunk_size = chunk_size_high;
 
-    a = (real*)shmem_malloc(nx * (chunk_size_high + 2) * sizeof(real)); // Using chunk_size_high so that it is same across all PEs
+    a = (real*)shmem_malloc(
+        nx * (chunk_size_high + 2) *
+        sizeof(real));  // Using chunk_size_high so that it is same across all PEs
     a_new = (real*)shmem_malloc(nx * (chunk_size_high + 2) * sizeof(real));
 
     cudaMemset(a, 0, nx * (chunk_size + 2) * sizeof(real));
     cudaMemset(a_new, 0, nx * (chunk_size + 2) * sizeof(real));
 
     // Calculate local domain boundaries
-    int iy_start_global; // My start index in the global array
+    int iy_start_global;  // My start index in the global array
     if (mype < num_ranks_low) {
         iy_start_global = mype * chunk_size_low + 1;
     } else {
-        iy_start_global = num_ranks_low * chunk_size_low + (mype - num_ranks_low) * chunk_size_high + 1;
+        iy_start_global =
+            num_ranks_low * chunk_size_low + (mype - num_ranks_low) * chunk_size_high + 1;
     }
-    int iy_end_global = iy_start_global + chunk_size - 1; // My last index in the global array
+    int iy_end_global = iy_start_global + chunk_size - 1;  // My last index in the global array
     // do not process boundaries
     iy_end_global = std::min(iy_end_global, ny - 2);
 
@@ -332,7 +337,8 @@ int main(int argc, char* argv[]) {
 
     constexpr int dim_block_x = 32;
     constexpr int dim_block_y = 4;
-    dim3 dim_grid((nx + dim_block_x - 1) / dim_block_x, (chunk_size + dim_block_y - 1) / dim_block_y, 1);
+    dim3 dim_grid((nx + dim_block_x - 1) / dim_block_x,
+                  (chunk_size + dim_block_y - 1) / dim_block_y, 1);
 
     int iter = 0;
     if (!mype) {
@@ -456,7 +462,7 @@ int main(int argc, char* argv[]) {
 
     CUDA_RT_CALL(cudaFreeHost(a_h));
     CUDA_RT_CALL(cudaFreeHost(a_ref_h));
-    
+
     shmem_finalize();
     MPI_CALL(MPI_Finalize());
 

@@ -100,18 +100,17 @@ typedef float real;
 constexpr real tol = 1.0e-8;
 const real PI = 2.0 * std::asin(1.0);
 
-
 /* This kernel implements neighborhood synchronization for Jacobi. It updates
    the neighbor PEs about its arrival and waits for notification from them. */
-__global__ void syncneighborhood_kernel(int my_pe, int num_pes, volatile long *sync_arr,
-                                                  long counter) {
+__global__ void syncneighborhood_kernel(int my_pe, int num_pes, volatile long* sync_arr,
+                                        long counter) {
     int next_rank = (my_pe + 1) % num_pes;
     int prev_rank = (my_pe == 0) ? num_pes - 1 : my_pe - 1;
     shmem_quiet(); /* To ensure all prior shmem operations have been completed */
 
     /* Notify neighbors about arrival */
-    shmem_long_p((long *)sync_arr, counter, next_rank);
-    shmem_long_p((long *)sync_arr + 1, counter, prev_rank);
+    shmem_long_p((long*)sync_arr, counter, next_rank);
+    shmem_long_p((long*)sync_arr + 1, counter, prev_rank);
 
     /* Wait for neighbors notification */
     while (counter > *(sync_arr))
@@ -134,9 +133,9 @@ __global__ void initialize_boundaries(real* __restrict__ const a_new, real* __re
 
 template <int BLOCK_DIM_X, int BLOCK_DIM_Y>
 __global__ void jacobi_kernel(real* __restrict__ const a_new, const real* __restrict__ const a,
-                                   real* __restrict__ const l2_norm, const int iy_start,
-                                   const int iy_end, const int nx, const int top_pe,
-                                   const int top_iy, const int bottom_pe, const int bottom_iy) {
+                              real* __restrict__ const l2_norm, const int iy_start,
+                              const int iy_end, const int nx, const int top_pe, const int top_iy,
+                              const int bottom_pe, const int bottom_iy) {
 #ifdef HAVE_CUB
     typedef cub::BlockReduce<real, BLOCK_DIM_X, cub::BLOCK_REDUCE_WARP_REDUCTIONS, BLOCK_DIM_Y>
         BlockReduce;
@@ -296,26 +295,30 @@ int main(int argc, char* argv[]) {
     // To calculate the number of ranks that need to compute an extra row,
     // the following formula is derived from this equation:
     // num_ranks_low * chunk_size_low + (size - num_ranks_low) * (chunk_size_low + 1) = ny - 2
-    int num_ranks_low = npes * chunk_size_low + npes - ny; // Number of ranks with chunk_size = chunk_size_low
+    int num_ranks_low =
+        npes * chunk_size_low + npes - ny;  // Number of ranks with chunk_size = chunk_size_low
     if (mype < num_ranks_low)
         chunk_size = chunk_size_low;
     else
         chunk_size = chunk_size_high;
 
-    a = (real*)shmem_malloc(nx * (chunk_size_high + 2) * sizeof(real)); // Using chunk_size_high so that it is same across all PEs
+    a = (real*)shmem_malloc(
+        nx * (chunk_size_high + 2) *
+        sizeof(real));  // Using chunk_size_high so that it is same across all PEs
     a_new = (real*)shmem_malloc(nx * (chunk_size_high + 2) * sizeof(real));
 
     cudaMemset(a, 0, nx * (chunk_size + 2) * sizeof(real));
     cudaMemset(a_new, 0, nx * (chunk_size + 2) * sizeof(real));
 
     // Calculate local domain boundaries
-    int iy_start_global; // My start index in the global array
+    int iy_start_global;  // My start index in the global array
     if (mype < num_ranks_low) {
         iy_start_global = mype * chunk_size_low + 1;
     } else {
-        iy_start_global = num_ranks_low * chunk_size_low + (mype - num_ranks_low) * chunk_size_high + 1;
+        iy_start_global =
+            num_ranks_low * chunk_size_low + (mype - num_ranks_low) * chunk_size_high + 1;
     }
-    int iy_end_global = iy_start_global + chunk_size - 1; // My last index in the global array
+    int iy_end_global = iy_start_global + chunk_size - 1;  // My last index in the global array
     // do not process boundaries
     iy_end_global = std::min(iy_end_global, ny - 2);
 
@@ -361,7 +364,8 @@ int main(int argc, char* argv[]) {
 
     constexpr int dim_block_x = 1024;
     constexpr int dim_block_y = 1;
-    dim3 dim_grid((nx + dim_block_x - 1) / dim_block_x, (chunk_size + dim_block_y - 1) / dim_block_y, 1);
+    dim3 dim_grid((nx + dim_block_x - 1) / dim_block_x,
+                  (chunk_size + dim_block_y - 1) / dim_block_y, 1);
 
     int iter = 0;
     if (!mype) {
@@ -375,14 +379,13 @@ int main(int argc, char* argv[]) {
     double start = MPI_Wtime();
     PUSH_RANGE("Jacobi solve", 0)
     bool l2_norm_greater_than_tol = true;
-    
+
     /* Used by syncneighborhood kernel */
-    long *sync_arr = NULL;
-    sync_arr = (long *)shmem_malloc(2 * sizeof(long));
+    long* sync_arr = NULL;
+    sync_arr = (long*)shmem_malloc(2 * sizeof(long));
     cudaMemsetAsync(sync_arr, 0, 2 * sizeof(long), compute_stream);
     cudaStreamSynchronize(compute_stream);
     long synccounter = 1;
-    
 
     while (l2_norm_greater_than_tol && iter < iter_max) {
         // on new iteration: old current vars are now previous vars, old
@@ -396,7 +399,7 @@ int main(int argc, char* argv[]) {
                 a_new, a, l2_norm_bufs[curr].d, iy_start, iy_end, nx, top_pe, iy_end_top, bottom_pe,
                 iy_start_bottom);
         CUDA_RT_CALL(cudaGetLastError());
-        
+
         /* Instead of using shmemx_barrier_all_on_stream, we are using a custom implementation
            of barrier that just synchronizes with the neighbor PEs that is the PEs with whom a PE
            communicates. This will perform faster than a global barrier that would do redundant

@@ -166,7 +166,7 @@ int main(int argc, char* argv[]) {
     real* a_h;
     CUDA_RT_CALL(cudaMallocHost(&a_h, nx * ny * sizeof(real)));
     double runtime_serial = single_gpu(nx, ny, iter_max, a_ref_h, nccheck, !csv && (0 == rank));
-    
+
     // ny - 2 rows are distributed amongst `size` ranks in such a way
     // that each rank gets either (ny - 2) / size or (ny - 2) / size + 1 rows.
     // This optimizes load balancing when (ny - 2) % size != 0
@@ -176,7 +176,8 @@ int main(int argc, char* argv[]) {
     // To calculate the number of ranks that need to compute an extra row,
     // the following formula is derived from this equation:
     // num_ranks_low * chunk_size_low + (size - num_ranks_low) * (chunk_size_low + 1) = ny - 2
-    int num_ranks_low = size * chunk_size_low + size - (ny - 2); // Number of ranks with chunk_size = chunk_size_low
+    int num_ranks_low = size * chunk_size_low + size -
+                        (ny - 2);  // Number of ranks with chunk_size = chunk_size_low
     if (rank < num_ranks_low)
         chunk_size = chunk_size_low;
     else
@@ -191,13 +192,14 @@ int main(int argc, char* argv[]) {
     CUDA_RT_CALL(cudaMemset(a_new, 0, nx * (chunk_size + 2) * sizeof(real)));
 
     // Calculate local domain boundaries
-    int iy_start_global; // My start index in the global array
+    int iy_start_global;  // My start index in the global array
     if (rank < num_ranks_low) {
         iy_start_global = rank * chunk_size_low + 1;
     } else {
-        iy_start_global = num_ranks_low * chunk_size_low + (rank - num_ranks_low) * chunk_size_high + 1;
+        iy_start_global =
+            num_ranks_low * chunk_size_low + (rank - num_ranks_low) * chunk_size_high + 1;
     }
-    int iy_end_global = iy_start_global + chunk_size - 1; // My last index in the global array
+    int iy_end_global = iy_start_global + chunk_size - 1;  // My last index in the global array
 
     int iy_start = 1;
     int iy_end = iy_start + chunk_size;
@@ -239,8 +241,8 @@ int main(int argc, char* argv[]) {
 
     int iter = 0;
     real l2_norm = 1.0;
-    bool calculate_norm; // boolean to store whether l2 norm will be calculated in
-                         //   an iteration or not
+    bool calculate_norm;  // boolean to store whether l2 norm will be calculated in
+                          //   an iteration or not
 
     MPI_CALL(MPI_Barrier(MPI_COMM_WORLD));
     double start = MPI_Wtime();
