@@ -191,13 +191,13 @@ int main(int argc, char* argv[]) {
     CUDA_RT_CALL(cudaMemset(a_new, 0, nx * (chunk_size + 2) * sizeof(real)));
 
     // Calculate local domain boundaries
-    int iy_start_global; /* My start index in the global array */
+    int iy_start_global; // My start index in the global array
     if (rank < num_ranks_low) {
         iy_start_global = rank * chunk_size_low + 1;
     } else {
         iy_start_global = num_ranks_low * chunk_size_low + (rank - num_ranks_low) * chunk_size_high + 1;
     }
-    int iy_end_global = iy_start_global + chunk_size - 1; /* My last index in the global array */
+    int iy_end_global = iy_start_global + chunk_size - 1; // My last index in the global array
 
     int iy_start = 1;
     int iy_end = iy_start + chunk_size;
@@ -239,8 +239,8 @@ int main(int argc, char* argv[]) {
 
     int iter = 0;
     real l2_norm = 1.0;
-    bool calculate_norm; /* boolean to store whether l2 norm will be calculated in
-                            an iteration or not */
+    bool calculate_norm; // boolean to store whether l2 norm will be calculated in
+                         //   an iteration or not
 
     MPI_CALL(MPI_Barrier(MPI_COMM_WORLD));
     double start = MPI_Wtime();

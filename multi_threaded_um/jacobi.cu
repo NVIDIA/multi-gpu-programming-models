@@ -212,7 +212,7 @@ int main(int argc, char* argv[]) {
         // To calculate the number of ranks that need to compute an extra row,
         // the following formula is derived from this equation:
         // num_ranks_low * chunk_size_low + (size - num_ranks_low) * (chunk_size_low + 1) = ny - 2
-        int num_ranks_low = num_devices * chunk_size_low + num_devices - ny; /* Number of ranks with chunk_size = chunk_size_low */
+        int num_ranks_low = num_devices * chunk_size_low + num_devices - ny; // Number of ranks with chunk_size = chunk_size_low
         if (dev_id < num_ranks_low)
             chunk_size = chunk_size_low;
         else
