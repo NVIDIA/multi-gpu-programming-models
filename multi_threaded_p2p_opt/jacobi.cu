@@ -207,10 +207,16 @@ int main(int argc, char* argv[]) {
             runtime_serial = single_gpu(nx, ny, iter_max, a_ref_h, nccheck, !csv);
         }
 #pragma omp barrier
+        // ny - 2 rows are distributed amongst `size` ranks in such a way
+        // that each rank gets either (ny - 2) / size or (ny - 2) / size + 1 rows.
+        // This optimizes load balancing when (ny - 2) % size != 0
         int chunk_size, chunk_size_low, chunk_size_high;
         int num_ranks_low; /* Number of ranks with chunk_size = chunk_size_low */
         chunk_size_low = (ny - 2) / num_devices;
         chunk_size_high = chunk_size_low + 1;
+        // To calculate the number of ranks that need to compute an extra row,
+        // the following formula is derived from this equation:
+        // num_ranks_low * chunk_size_low + (size - num_ranks_low) * (chunk_size_low + 1) = ny - 2
         num_ranks_low = num_devices * chunk_size_low + num_devices - (ny - 2);
         if (dev_id < num_ranks_low)
             chunk_size = chunk_size_low;
