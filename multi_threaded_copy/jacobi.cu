@@ -217,7 +217,7 @@ int main(int argc, char* argv[]) {
         int iy_end_global = iy_start_global + chunk_size - 1; /* My last index in the global array */
 
         int iy_start = 1;
-        iy_end[dev_id] = (iy_end_global - iy_start_global + 1) + iy_start;
+        iy_end[dev_id] = iy_start + chunk_size;
 
         // Set diriclet boundary conditions on left and right boarder
         initialize_boundaries<<<(ny / num_devices) / 128 + 1, 128>>>(

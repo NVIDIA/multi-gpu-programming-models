@@ -195,7 +195,7 @@ int main(int argc, char* argv[]) {
     int iy_end_global = iy_start_global + chunk_size - 1; /* My last index in the global array */
 
     int iy_start = 1;
-    int iy_end = (iy_end_global - iy_start_global + 1) + iy_start;
+    int iy_end = iy_start + chunk_size;
 
     // Set diriclet boundary conditions on left and right boarder
     launch_initialize_boundaries(a, a_new, PI, iy_start_global - 1, nx, (chunk_size + 2), ny);
