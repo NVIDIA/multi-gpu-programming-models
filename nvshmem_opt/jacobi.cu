@@ -463,7 +463,7 @@ int main(int argc, char* argv[]) {
 
     if (!mype && result_correct) {
         if (csv) {
-            printf("nvshmem, %d, %d, %d, %d, %d, 1, %f, %f\n", nx, ny, iter_max, nccheck, npes,
+            printf("nvshmem_opt, %d, %d, %d, %d, %d, 1, %f, %f\n", nx, ny, iter_max, nccheck, npes,
                    (stop - start), runtime_serial);
         } else {
             printf("Num GPUs: %d.\n", npes);
