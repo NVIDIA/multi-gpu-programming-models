@@ -239,11 +239,11 @@ int main(int argc, char* argv[]) {
     // Set symmetric heap size for nvshmem based on problem size
     // Its default value in nvshmem is 1 GB which is not sufficient
     // for large mesh sizes
-    int mesh_size_per_rank = nx * ((ny + size - 1)/size);
-    int symmetric_heap_size = 2 * mesh_size_per_rank * sizeof(real) * 1.1; // Factor 2 is because 2 arrays are allocated - a and a_new
+    long long unsigned int mesh_size_per_rank = nx * ((ny + size - 1)/size);
+    long long unsigned int symmetric_heap_size = 2 * mesh_size_per_rank * sizeof(real) * 1.1; // Factor 2 is because 2 arrays are allocated - a and a_new
                                                                            // 1.1 factor is just for alignment or other usage
     char heap_size[100];
-    sprintf(heap_size, "%d", symmetric_heap_size);
+    sprintf(heap_size, "%llu", symmetric_heap_size);
     setenv("SHMEM_SYMMETRIC_SIZE", heap_size, 1);
     shmemx_init_attr(SHMEMX_INIT_WITH_MPI_COMM, &attr);
 
