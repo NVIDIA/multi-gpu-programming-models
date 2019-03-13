@@ -236,6 +236,11 @@ int main(int argc, char* argv[]) {
 
     mpi_comm = MPI_COMM_WORLD;
     attr.mpi_comm = &mpi_comm;
+    int mesh_size_per_rank = nx * ((ny + size - 1)/size);
+    int symmetric_heap_size = 2 * mesh_size_per_rank * sizeof(real) * 1.1; // 1.1 factor is just for alignment or other usage
+    char heap_size[100];
+    sprintf(heap_size, "%d", symmetric_heap_size);
+    setenv("SHMEM_SYMMETRIC_SIZE", heap_size, 1);
     shmemx_init_attr(SHMEMX_INIT_WITH_MPI_COMM, &attr);
 
     int npes = shmem_n_pes();
