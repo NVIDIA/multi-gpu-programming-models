@@ -213,7 +213,7 @@ int main(int argc, char* argv[]) {
         // the following formula is derived from this equation:
         // num_ranks_low * chunk_size_low + (size - num_ranks_low) * (chunk_size_low + 1) = ny - 2
         int num_ranks_low = num_devices * chunk_size_low + num_devices -
-                            (ny - 2); // Number of ranks with chunk_size = chunk_size_low
+                            (ny - 2);  // Number of ranks with chunk_size = chunk_size_low
         if (dev_id < num_ranks_low)
             chunk_size = chunk_size_low;
         else
@@ -259,7 +259,7 @@ int main(int argc, char* argv[]) {
             CUDA_RT_CALL(cudaMemset(a_new[dev_id], 0, nx * (chunk_size + 2) * sizeof(real)));
 
             // Calculate local domain boundaries
-            int iy_start_global; // My start index in the global array
+            int iy_start_global;  // My start index in the global array
             if (dev_id < num_ranks_low) {
                 iy_start_global = dev_id * chunk_size_low + 1;
             } else {
@@ -267,7 +267,7 @@ int main(int argc, char* argv[]) {
                     num_ranks_low * chunk_size_low + (dev_id - num_ranks_low) * chunk_size_high + 1;
             }
             int iy_end_global =
-                iy_start_global + chunk_size - 1; // My last index in the global array
+                iy_start_global + chunk_size - 1;  // My last index in the global array
 
             int iy_start = 1;
             iy_end[dev_id] = (iy_end_global - iy_start_global + 1) + iy_start;

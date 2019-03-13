@@ -239,9 +239,11 @@ int main(int argc, char* argv[]) {
     // Set symmetric heap size for nvshmem based on problem size
     // Its default value in nvshmem is 1 GB which is not sufficient
     // for large mesh sizes
-    long long unsigned int mesh_size_per_rank = nx * ((ny + size - 1)/size);
-    long long unsigned int symmetric_heap_size = 2 * mesh_size_per_rank * sizeof(real) * 1.1; // Factor 2 is because 2 arrays are allocated - a and a_new
-                                                                           // 1.1 factor is just for alignment or other usage
+    long long unsigned int mesh_size_per_rank = nx * ((ny + size - 1) / size);
+    long long unsigned int symmetric_heap_size =
+        2 * mesh_size_per_rank * sizeof(real) *
+        1.1;  // Factor 2 is because 2 arrays are allocated - a and a_new
+              // 1.1 factor is just for alignment or other usage
     char heap_size[100];
     sprintf(heap_size, "%llu", symmetric_heap_size);
     setenv("SHMEM_SYMMETRIC_SIZE", heap_size, 1);
@@ -277,8 +279,8 @@ int main(int argc, char* argv[]) {
     // To calculate the number of ranks that need to compute an extra row,
     // the following formula is derived from this equation:
     // num_ranks_low * chunk_size_low + (size - num_ranks_low) * (chunk_size_low + 1) = ny - 2
-    int num_ranks_low =
-        npes * chunk_size_low + npes - (ny - 2);  // Number of ranks with chunk_size = chunk_size_low
+    int num_ranks_low = npes * chunk_size_low + npes -
+                        (ny - 2);  // Number of ranks with chunk_size = chunk_size_low
     if (mype < num_ranks_low)
         chunk_size = chunk_size_low;
     else
@@ -519,7 +521,8 @@ double single_gpu(const int nx, const int ny, const int iter_max, real* const a_
 
     constexpr int dim_block_x = 32;
     constexpr int dim_block_y = 4;
-    dim3 dim_grid((nx + dim_block_x - 1) / dim_block_x, ((ny - 2) + dim_block_y - 1) / dim_block_y, 1);
+    dim3 dim_grid((nx + dim_block_x - 1) / dim_block_x, ((ny - 2) + dim_block_y - 1) / dim_block_y,
+                  1);
 
     int iter = 0;
     real l2_norm = 1.0;
