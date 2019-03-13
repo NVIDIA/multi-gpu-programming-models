@@ -253,8 +253,8 @@ int main(int argc, char* argv[]) {
 
     l2_norm_buf l2_norm_bufs[2];
 
-    CUDA_RT_CALL(cudaMallocHost(&a_ref_h, nx * (ny + 2) * sizeof(real)));
-    CUDA_RT_CALL(cudaMallocHost(&a_h, nx * (ny + 2) * sizeof(real)));
+    CUDA_RT_CALL(cudaMallocHost(&a_ref_h, nx * ny * sizeof(real)));
+    CUDA_RT_CALL(cudaMallocHost(&a_h, nx * ny * sizeof(real)));
     runtime_serial = single_gpu(nx, ny, iter_max, a_ref_h, nccheck, !csv && (0 == mype), mype);
 
     shmem_barrier_all();
@@ -269,7 +269,7 @@ int main(int argc, char* argv[]) {
     // the following formula is derived from this equation:
     // num_ranks_low * chunk_size_low + (size - num_ranks_low) * (chunk_size_low + 1) = ny - 2
     int num_ranks_low =
-        npes * chunk_size_low + npes - ny;  // Number of ranks with chunk_size = chunk_size_low
+        npes * chunk_size_low + npes - (ny - 2);  // Number of ranks with chunk_size = chunk_size_low
     if (mype < num_ranks_low)
         chunk_size = chunk_size_low;
     else
@@ -293,7 +293,7 @@ int main(int argc, char* argv[]) {
     }
     int iy_end_global = iy_start_global + chunk_size - 1;  // My last index in the global array
     // do not process boundaries
-    iy_end_global = std::min(iy_end_global, ny - 2);
+    iy_end_global = std::min(iy_end_global, ny - 4);
 
     int iy_start = 1;
     int iy_end = (iy_end_global - iy_start_global + 1) + iy_start;
@@ -307,7 +307,7 @@ int main(int argc, char* argv[]) {
 
     // Set diriclet boundary conditions on left and right boundary
     initialize_boundaries<<<(ny / npes) / 128 + 1, 128>>>(a, a_new, PI, iy_start_global - 1, nx,
-                                                          chunk_size, ny);
+                                                          chunk_size, ny - 2);
     CUDA_RT_CALL(cudaGetLastError());
     CUDA_RT_CALL(cudaDeviceSynchronize());
 
@@ -409,7 +409,7 @@ int main(int argc, char* argv[]) {
     shmem_barrier_all();
 
     CUDA_RT_CALL(cudaMemcpy(a_h + iy_start_global * nx, a + nx,
-                            std::min(ny - iy_start_global, chunk_size) * nx * sizeof(real),
+                            std::min(ny - 2 - iy_start_global, chunk_size) * nx * sizeof(real),
                             cudaMemcpyDeviceToHost));
 
     result_correct = true;
@@ -480,16 +480,16 @@ double single_gpu(const int nx, const int ny, const int iter_max, real* const a_
     real* l2_norm_h;
 
     int iy_start = 1;
-    int iy_end = ny - 1;
+    int iy_end = ny - 3;
 
-    CUDA_RT_CALL(cudaMalloc((void**)&a, nx * (ny + 2) * sizeof(real)));
-    CUDA_RT_CALL(cudaMalloc((void**)&a_new, nx * (ny + 2) * sizeof(real)));
+    CUDA_RT_CALL(cudaMalloc((void**)&a, nx * ny * sizeof(real)));
+    CUDA_RT_CALL(cudaMalloc((void**)&a_new, nx * ny * sizeof(real)));
 
-    CUDA_RT_CALL(cudaMemset(a, 0, nx * (ny + 2) * sizeof(real)));
-    CUDA_RT_CALL(cudaMemset(a_new, 0, nx * (ny + 2) * sizeof(real)));
+    CUDA_RT_CALL(cudaMemset(a, 0, nx * ny * sizeof(real)));
+    CUDA_RT_CALL(cudaMemset(a_new, 0, nx * ny * sizeof(real)));
 
     // Set diriclet boundary conditions on left and right boarder
-    initialize_boundaries<<<ny / 128 + 1, 128>>>(a, a_new, PI, 0, nx, ny, ny);
+    initialize_boundaries<<<ny / 128 + 1, 128>>>(a, a_new, PI, 0, nx, ny - 2, ny - 2);
 
     CUDA_RT_CALL(cudaGetLastError());
     CUDA_RT_CALL(cudaDeviceSynchronize());
@@ -510,7 +510,7 @@ double single_gpu(const int nx, const int ny, const int iter_max, real* const a_
 
     constexpr int dim_block_x = 32;
     constexpr int dim_block_y = 4;
-    dim3 dim_grid((nx - 1) / dim_block_x + 1, (ny - 1) / dim_block_y + 1, 1);
+    dim3 dim_grid((nx - 1) / dim_block_x + 1, (ny - 3) / dim_block_y + 1, 1);
 
     int iter = 0;
     real l2_norm = 1.0;
@@ -543,7 +543,7 @@ double single_gpu(const int nx, const int ny, const int iter_max, real* const a_
     POP_RANGE
     double stop = MPI_Wtime();
 
-    CUDA_RT_CALL(cudaMemcpy(a_ref_h, a, nx * (ny + 2) * sizeof(real), cudaMemcpyDeviceToHost));
+    CUDA_RT_CALL(cudaMemcpy(a_ref_h, a, nx * ny * sizeof(real), cudaMemcpyDeviceToHost));
 
     CUDA_RT_CALL(cudaStreamDestroy(compute_stream));
 
