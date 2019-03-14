@@ -274,6 +274,8 @@ int main(int argc, char* argv[]) {
               // 1.1 factor is just for alignment or other usage
     char symmetric_heap_size_str[100];
     sprintf(symmetric_heap_size_str, "%llu", symmetric_heap_size);
+    if (!rank && !csv)
+        printf("Setting environment variable SHMEM_SYMMETRIC_SIZE = %llu\n", symmetric_heap_size);
     setenv("SHMEM_SYMMETRIC_SIZE", symmetric_heap_size_str, 1);
     shmemx_init_attr(SHMEMX_INIT_WITH_MPI_COMM, &attr);
 
