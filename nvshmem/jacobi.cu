@@ -271,7 +271,7 @@ int main(int argc, char* argv[]) {
     if (value) { /* env variable is set */
         long long unsigned int size_env = parse_shmem_symmetric_size(value);
         if (size_env < required_symmetric_heap_size) {
-            printf("ERROR: Minimum SHMEM_SYMMETRIC_SIZE = %lluB, Current SHMEM_SYMMETRIC_SIZE=%s\n", required_symmetric_heap_size, value);
+            fprintf(stderr, "ERROR: Minimum SHMEM_SYMMETRIC_SIZE = %lluB, Current SHMEM_SYMMETRIC_SIZE=%s\n", required_symmetric_heap_size, value);
             exit(1);
         }
     } else {
