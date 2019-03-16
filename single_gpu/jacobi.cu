@@ -168,8 +168,8 @@ int main(int argc, char* argv[]) {
     const bool csv = get_arg(argv, argv + argc, "-csv");
 
     if (nccheck != 1) {
-        printf("Only nccheck = 1 is supported\n");
-        exit(1);
+        fprintf(stderr, "Only nccheck = 1 is supported\n");
+        return -1;
     }
 
     real* a;
