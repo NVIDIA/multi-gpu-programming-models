@@ -300,7 +300,8 @@ int main(int argc, char* argv[]) {
         long long unsigned int size_env = parse_shmem_symmetric_size(value);
         if (size_env < required_symmetric_heap_size) {
             fprintf(stderr, "ERROR: Minimum SHMEM_SYMMETRIC_SIZE = %lluB, Current SHMEM_SYMMETRIC_SIZE = %s\n", required_symmetric_heap_size, value);
-            exit(1);
+            MPI_CALL(MPI_Finalize());
+            return -1;
         }
     } else {
         char symmetric_heap_size_str[100];
