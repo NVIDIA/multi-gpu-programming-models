@@ -25,8 +25,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #include <mpi.h>
-#include <shmem.h>
-#include <shmemx.h>
+#include <nvshmem.h>
+#include <nvshmemx.h>
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -96,8 +96,8 @@ const int num_colors = sizeof(colors) / sizeof(uint32_t);
                     #call, __LINE__, __FILE__, cudaGetErrorString(cudaStatus), cudaStatus); \
     }
 
-// convert SHMEM_SYMMETRIC_SIZE string to long long unsigned int
-long long unsigned int parse_shmem_symmetric_size(char *value) {
+// convert NVSHMEM_SYMMETRIC_SIZE string to long long unsigned int
+long long unsigned int parse_nvshmem_symmetric_size(char *value) {
     long long unsigned int units, size;
 
     assert(value != NULL);
@@ -128,11 +128,11 @@ __global__ void syncneighborhood_kernel(int my_pe, int num_pes, volatile long* s
                                         long counter) {
     int next_rank = (my_pe + 1) % num_pes;
     int prev_rank = (my_pe == 0) ? num_pes - 1 : my_pe - 1;
-    shmem_quiet(); /* To ensure all prior shmem operations have been completed */
+    nvshmem_quiet(); /* To ensure all prior nvshmem operations have been completed */
 
     /* Notify neighbors about arrival */
-    shmem_long_p((long*)sync_arr, counter, next_rank);
-    shmem_long_p((long*)sync_arr + 1, counter, prev_rank);
+    nvshmem_long_p((long*)sync_arr, counter, next_rank);
+    nvshmem_long_p((long*)sync_arr + 1, counter, prev_rank);
 
     /* Wait for neighbors notification */
     while (counter > *(sync_arr))
@@ -182,11 +182,11 @@ __global__ void jacobi_kernel(real* __restrict__ const a_new, const real* __rest
 
     /* Communicate the boundaries */
     if ((block_iy <= iy_start) && (iy_start < block_iy + blockDim.y)) {
-        shmemx_float_put_nbi_block(a_new + top_iy * nx + block_ix, a_new + iy_start * nx + block_ix,
+        nvshmemx_float_put_nbi_block(a_new + top_iy * nx + block_ix, a_new + iy_start * nx + block_ix,
                                    min(blockDim.x, nx - 1 - block_ix), top_pe);
     }
     if ((block_iy < iy_end) && (iy_end <= block_iy + blockDim.y)) {
-        shmemx_float_put_nbi_block(a_new + bottom_iy * nx + block_ix,
+        nvshmemx_float_put_nbi_block(a_new + bottom_iy * nx + block_ix,
                                    a_new + (iy_end - 1) * nx + block_ix,
                                    min(blockDim.x, nx - 1 - block_ix), bottom_pe);
     }
@@ -282,7 +282,7 @@ int main(int argc, char* argv[]) {
     CUDA_RT_CALL(cudaFree(0));
 
     MPI_Comm mpi_comm;
-    shmemx_init_attr_t attr;
+    nvshmemx_init_attr_t attr;
 
     mpi_comm = MPI_COMM_WORLD;
     attr.mpi_comm = &mpi_comm;
@@ -295,11 +295,11 @@ int main(int argc, char* argv[]) {
         1.1;  // Factor 2 is because 2 arrays are allocated - a and a_new
               // 1.1 factor is just for alignment or other usage
 
-    char * value = getenv("SHMEM_SYMMETRIC_SIZE");
+    char * value = getenv("NVSHMEM_SYMMETRIC_SIZE");
     if (value) { /* env variable is set */
-        long long unsigned int size_env = parse_shmem_symmetric_size(value);
+        long long unsigned int size_env = parse_nvshmem_symmetric_size(value);
         if (size_env < required_symmetric_heap_size) {
-            fprintf(stderr, "ERROR: Minimum SHMEM_SYMMETRIC_SIZE = %lluB, Current SHMEM_SYMMETRIC_SIZE = %s\n", required_symmetric_heap_size, value);
+            fprintf(stderr, "ERROR: Minimum NVSHMEM_SYMMETRIC_SIZE = %lluB, Current NVSHMEM_SYMMETRIC_SIZE = %s\n", required_symmetric_heap_size, value);
             MPI_CALL(MPI_Finalize());
             return -1;
         }
@@ -307,15 +307,15 @@ int main(int argc, char* argv[]) {
         char symmetric_heap_size_str[100];
         sprintf(symmetric_heap_size_str, "%llu", required_symmetric_heap_size);
         if (!rank && !csv)
-            printf("Setting environment variable SHMEM_SYMMETRIC_SIZE = %llu\n", required_symmetric_heap_size);
-        setenv("SHMEM_SYMMETRIC_SIZE", symmetric_heap_size_str, 1);
+            printf("Setting environment variable NVSHMEM_SYMMETRIC_SIZE = %llu\n", required_symmetric_heap_size);
+        setenv("NVSHMEM_SYMMETRIC_SIZE", symmetric_heap_size_str, 1);
     }
-    shmemx_init_attr(SHMEMX_INIT_WITH_MPI_COMM, &attr);
+    nvshmemx_init_attr(NVSHMEMX_INIT_WITH_MPI_COMM, &attr);
 
-    int npes = shmem_n_pes();
-    int mype = shmem_my_pe();
+    int npes = nvshmem_n_pes();
+    int mype = nvshmem_my_pe();
 
-    shmem_barrier_all();
+    nvshmem_barrier_all();
 
     bool result_correct = true;
     real* a;
@@ -331,7 +331,7 @@ int main(int argc, char* argv[]) {
     CUDA_RT_CALL(cudaMallocHost(&a_h, nx * ny * sizeof(real)));
     runtime_serial = single_gpu(nx, ny, iter_max, a_ref_h, nccheck, !csv && (0 == mype), mype);
 
-    shmem_barrier_all();
+    nvshmem_barrier_all();
     // ny - 2 rows are distributed amongst `size` ranks in such a way
     // that each rank gets either (ny - 2) / size or (ny - 2) / size + 1 rows.
     // This optimizes load balancing when (ny - 2) % size != 0
@@ -348,10 +348,10 @@ int main(int argc, char* argv[]) {
     else
         chunk_size = chunk_size_high;
 
-    a = (real*)shmem_malloc(
+    a = (real*)nvshmem_malloc(
         nx * (chunk_size_high + 2) *
         sizeof(real));  // Using chunk_size_high so that it is same across all PEs
-    a_new = (real*)shmem_malloc(nx * (chunk_size_high + 2) * sizeof(real));
+    a_new = (real*)nvshmem_malloc(nx * (chunk_size_high + 2) * sizeof(real));
 
     cudaMemset(a, 0, nx * (chunk_size + 2) * sizeof(real));
     cudaMemset(a_new, 0, nx * (chunk_size + 2) * sizeof(real));
@@ -399,7 +399,7 @@ int main(int argc, char* argv[]) {
         *(l2_norm_bufs[i].h) = 1.0;
     }
 
-    shmemx_barrier_all_on_stream(compute_stream);
+    nvshmemx_barrier_all_on_stream(compute_stream);
     MPI_CALL(MPI_Allreduce(l2_norm_bufs[0].h, &l2_norms[0], 1, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD));
     MPI_CALL(MPI_Allreduce(l2_norm_bufs[1].h, &l2_norms[1], 1, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD));
     CUDA_RT_CALL(cudaDeviceSynchronize());
@@ -420,7 +420,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    shmem_barrier_all();
+    nvshmem_barrier_all();
 
     double start = MPI_Wtime();
     PUSH_RANGE("Jacobi solve", 0)
@@ -428,7 +428,7 @@ int main(int argc, char* argv[]) {
 
     /* Used by syncneighborhood kernel */
     long* sync_arr = NULL;
-    sync_arr = (long*)shmem_malloc(2 * sizeof(long));
+    sync_arr = (long*)nvshmem_malloc(2 * sizeof(long));
     cudaMemsetAsync(sync_arr, 0, 2 * sizeof(long), compute_stream);
     cudaStreamSynchronize(compute_stream);
     long synccounter = 1;
@@ -446,7 +446,7 @@ int main(int argc, char* argv[]) {
                 iy_start_bottom);
         CUDA_RT_CALL(cudaGetLastError());
 
-        /* Instead of using shmemx_barrier_all_on_stream, we are using a custom implementation
+        /* Instead of using nvshmemx_barrier_all_on_stream, we are using a custom implementation
            of barrier that just synchronizes with the neighbor PEs that is the PEs with whom a PE
            communicates. This will perform faster than a global barrier that would do redundant
            synchronization for this application. */
@@ -486,12 +486,12 @@ int main(int argc, char* argv[]) {
         iter++;
     }
 
-    shmem_barrier_all();
+    nvshmem_barrier_all();
     double stop = MPI_Wtime();
     POP_RANGE
 
     CUDA_RT_CALL(cudaDeviceSynchronize());
-    shmem_barrier_all();
+    nvshmem_barrier_all();
 
     CUDA_RT_CALL(cudaMemcpy(a_h + iy_start_global * nx, a + nx,
                             std::min(ny - 2 - iy_start_global, chunk_size) * nx * sizeof(real),
@@ -535,9 +535,9 @@ int main(int argc, char* argv[]) {
         CUDA_RT_CALL(cudaEventDestroy(l2_norm_bufs[i].copy_done));
     }
 
-    shmem_free(a);
-    shmem_free(a_new);
-    shmem_free(sync_arr);
+    nvshmem_free(a);
+    nvshmem_free(a_new);
+    nvshmem_free(sync_arr);
 
     CUDA_RT_CALL(cudaEventDestroy(reset_l2_norm_done[1]));
     CUDA_RT_CALL(cudaEventDestroy(reset_l2_norm_done[0]));
@@ -549,7 +549,7 @@ int main(int argc, char* argv[]) {
     CUDA_RT_CALL(cudaFreeHost(a_h));
     CUDA_RT_CALL(cudaFreeHost(a_ref_h));
 
-    shmem_finalize();
+    nvshmem_finalize();
     MPI_CALL(MPI_Finalize());
 
     return (result_correct == 1) ? 0 : 1;
@@ -613,7 +613,7 @@ double single_gpu(const int nx, const int ny, const int iter_max, real* const a_
             <<<dim_grid, {dim_block_x, dim_block_y, 1}, 0, compute_stream>>>(
                 a_new, a, l2_norm_d, iy_start, iy_end, nx, mype, iy_end + 1, mype, (iy_start - 1));
         CUDA_RT_CALL(cudaGetLastError());
-        shmemx_barrier_all_on_stream(compute_stream);
+        nvshmemx_barrier_all_on_stream(compute_stream);
 
         if ((iter % nccheck) == 0 || (print && ((iter % 100) == 0))) {
             CUDA_RT_CALL(cudaMemcpyAsync(l2_norm_h, l2_norm_d, sizeof(real), cudaMemcpyDeviceToHost,
