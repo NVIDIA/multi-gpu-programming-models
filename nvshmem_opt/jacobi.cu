@@ -613,7 +613,6 @@ double single_gpu(const int nx, const int ny, const int iter_max, real* const a_
             <<<dim_grid, {dim_block_x, dim_block_y, 1}, 0, compute_stream>>>(
                 a_new, a, l2_norm_d, iy_start, iy_end, nx, mype, iy_end + 1, mype, (iy_start - 1));
         CUDA_RT_CALL(cudaGetLastError());
-        nvshmemx_barrier_all_on_stream(compute_stream);
 
         if ((iter % nccheck) == 0 || (print && ((iter % 100) == 0))) {
             CUDA_RT_CALL(cudaMemcpyAsync(l2_norm_h, l2_norm_d, sizeof(real), cudaMemcpyDeviceToHost,
