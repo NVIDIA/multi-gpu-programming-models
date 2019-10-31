@@ -486,11 +486,11 @@ int main(int argc, char* argv[]) {
         iter++;
     }
 
+    CUDA_RT_CALL(cudaDeviceSynchronize());
     nvshmem_barrier_all();
     double stop = MPI_Wtime();
     POP_RANGE
 
-    CUDA_RT_CALL(cudaDeviceSynchronize());
     nvshmem_barrier_all();
 
     CUDA_RT_CALL(cudaMemcpy(a_h + iy_start_global * nx, a + nx,
