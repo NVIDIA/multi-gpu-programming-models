@@ -135,10 +135,7 @@ __global__ void syncneighborhood_kernel(int my_pe, int num_pes, volatile long* s
     nvshmem_long_p((long*)sync_arr + 1, counter, prev_rank);
 
     /* Wait for neighbors notification */
-    while (counter > *(sync_arr))
-        ;
-    while (counter > *(sync_arr + 1))
-        ;
+    nvshmem_long_wait_until_all((long *)sync_arr, 2, NULL, NVSHMEM_CMP_GE, counter);
 }
 
 __global__ void initialize_boundaries(real* __restrict__ const a_new, real* __restrict__ const a,
