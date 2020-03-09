@@ -131,8 +131,8 @@ __global__ void syncneighborhood_kernel(int my_pe, int num_pes, volatile long* s
     nvshmem_quiet(); /* To ensure all prior nvshmem operations have been completed */
 
     /* Notify neighbors about arrival */
-    nvshmem_long_p((long*)sync_arr, counter, next_rank);
-    nvshmem_long_p((long*)sync_arr + 1, counter, prev_rank);
+    nvshmemx_long_signal((long*)sync_arr, counter, next_rank);
+    nvshmemx_long_signal((long*)sync_arr + 1, counter, prev_rank);
 
     /* Wait for neighbors notification */
     nvshmem_long_wait_until_all((long *)sync_arr, 2, NULL, NVSHMEM_CMP_GE, counter);
