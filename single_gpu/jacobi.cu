@@ -226,7 +226,7 @@ int main(int argc, char* argv[]) {
             iter_max, ny, nx, nccheck);
 
     constexpr int dim_block_x = 32;
-    constexpr int dim_block_y = 4;
+    constexpr int dim_block_y = 32;
     dim3 dim_grid((nx + dim_block_x - 1) / dim_block_x, (ny + dim_block_y - 1) / dim_block_y, 1);
 
     int iter = 0;

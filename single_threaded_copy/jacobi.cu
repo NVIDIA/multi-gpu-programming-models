@@ -288,7 +288,7 @@ int main(int argc, char* argv[]) {
             iter_max, ny, nx, nccheck);
 
     constexpr int dim_block_x = 32;
-    constexpr int dim_block_y = 4;
+    constexpr int dim_block_y = 32;
     int iter = 0;
     bool calculate_norm;
     real l2_norm = 1.0;
@@ -478,7 +478,7 @@ double single_gpu(const int nx, const int ny, const int iter_max, real* const a_
             iter_max, ny, nx, nccheck);
 
     constexpr int dim_block_x = 32;
-    constexpr int dim_block_y = 4;
+    constexpr int dim_block_y = 32;
     dim3 dim_grid((nx + dim_block_x - 1) / dim_block_x, (ny + dim_block_y - 1) / dim_block_y, 1);
 
     int iter = 0;

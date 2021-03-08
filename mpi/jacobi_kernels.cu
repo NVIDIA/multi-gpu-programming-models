@@ -104,7 +104,7 @@ void launch_jacobi_kernel(real* __restrict__ const a_new, const real* __restrict
                           real* __restrict__ const l2_norm, const int iy_start, const int iy_end,
                           const int nx, const bool calculate_norm, cudaStream_t stream) {
     constexpr int dim_block_x = 32;
-    constexpr int dim_block_y = 4;
+    constexpr int dim_block_y = 32;
     dim3 dim_grid((nx + dim_block_x - 1) / dim_block_x,
                   ((iy_end - iy_start) + dim_block_y - 1) / dim_block_y, 1);
     jacobi_kernel<dim_block_x, dim_block_y><<<dim_grid, {dim_block_x, dim_block_y, 1}, 0, stream>>>(
