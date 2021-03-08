@@ -11,21 +11,20 @@ This project implements the well known multi GPU Jacobi solver with different mu
 * `nvshmem`                        Multi Process with MPI and NVSHMEM using NVSHMEM for inter GPU communication. Other approach, `nvshmem_opt`, might be better for portable performance.
 * `nvshmem_opt`                    Multi Process with MPI and NVSHMEM using NVSHMEM for inter GPU communication with NVSHMEM extension API
 
-Each variant is a stand alone Makefile project and all variants have been described in the GTC EU 2018 Talk [Multi GPU Programming Models](http://on-demand-gtc.gputechconf.com/gtc-quicklink/eCVNLP6)
+Each variant is a stand alone Makefile project and all variants have been described in the GTC 2019 Talk [Multi GPU Programming Models](http://on-demand-gtc.gputechconf.com/gtc-quicklink/4sAYj)
 
 # Requirements
-* CUDA: verison 9.2 or later is required by all variants.
+* CUDA: verison 11.0 (9.2 if build with `DISABLE_CUB=1`) or later is required by all variants.
 * OpenMP capable compiler: Required by the Multi Threaded variants. The examples have been developed and tested with gcc.
 * CUDA-aware MPI: Required by the MPI and NVSHMEM variants. The examples have been developed and tested with OpenMPI.
-* CUB: Optional for optimized residual reductions. Set CUB_HOME to your cub installation directory. The examples have been developed and tested with cub 1.8.0.
 * NVSHMEM (version 0.4.1 or later): Required by the NVSHMEM variant. Please reach out to nvshmem@nvidia.com for an early access to NVSHMEM.
 
 # Building 
 Each variant come with a Makefile and can be build by simply issuing make, e.g. 
 ```sh
 multi-gpu-programming-models$ cd multi_threaded_copy
-multi_threaded_copy$ make CUB_HOME=../cub
-nvcc -DHAVE_CUB -I../cub -Xcompiler -fopenmp -lineinfo -DUSE_NVTX -lnvToolsExt -gencode arch=compute_60,code=sm_60 -gencode arch=compute_70,code=sm_70 -gencode arch=compute_70,code=compute_70  -std=c++11 jacobi.cu -o jacobi
+multi_threaded_copy$ make
+nvcc -DHAVE_CUB -Xcompiler -fopenmp -lineinfo -DUSE_NVTX -lnvToolsExt -gencode arch=compute_70,code=sm_70 -gencode arch=compute_80,code=sm_80 -gencode arch=compute_80,code=compute_80 -std=c++14 jacobi.cu -o jacobi
 multi_threaded_copy$ ls jacobi
 jacobi
 ```
@@ -38,7 +37,7 @@ All variant have the following command line options
 * `-ny`: Size of the domain in y direction (default 7168)
 * `-csv`: Print performance results as -csv
 
-The provided script `bench.sh` contains some examples executing all the benchmarks presented in the GTC EU 2018 Talk Multi GPU Programming Models.
+The provided script `bench.sh` contains some examples executing all the benchmarks presented in the GTC 2019 Talk Multi GPU Programming Models.
 
 # Developers guide
 The code applies the style guide implemented in [`.clang-format`](.clang-format) file. [`clang-format`](https://clang.llvm.org/docs/ClangFormat.html) version 7 or later should be used to format the code prior to submitting it. E.g. with
