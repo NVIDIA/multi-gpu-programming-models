@@ -3,6 +3,7 @@ NP ?= 1
 NVCC=nvcc
 MPICXX=mpicxx
 MPIRUN ?= mpirun
+CUDA_HOME ?= /usr/local/cuda
 GENCODE_SM30	:= -gencode arch=compute_30,code=sm_30
 GENCODE_SM35	:= -gencode arch=compute_35,code=sm_35
 GENCODE_SM37	:= -gencode arch=compute_37,code=sm_37

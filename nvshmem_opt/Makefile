@@ -2,6 +2,7 @@
 NP ?= 1
 NVCC=nvcc
 MPIRUN ?= mpirun
+CUDA_HOME ?= /usr/local/cuda
 ifndef NVSHMEM_HOME
 $(error NVSHMEM_HOME is not set)
 endif
