@@ -143,8 +143,8 @@ int main(int argc, char* argv[]) {
 
     const int iter_max = get_argval<int>(argv, argv + argc, "-niter", 1000);
     const int nccheck = get_argval<int>(argv, argv + argc, "-nccheck", 1);
-    const int nx = get_argval<int>(argv, argv + argc, "-nx", 7168);
-    const int ny = get_argval<int>(argv, argv + argc, "-ny", 7168);
+    const int nx = get_argval<int>(argv, argv + argc, "-nx", 16384);
+    const int ny = get_argval<int>(argv, argv + argc, "-ny", 16384);
     const bool csv = get_arg(argv, argv + argc, "-csv");
 
     int local_rank = -1;

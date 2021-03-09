@@ -17,7 +17,7 @@ Each variant is a stand alone Makefile project and all variants have been descri
 * CUDA: verison 11.0 (9.2 if build with `DISABLE_CUB=1`) or later is required by all variants.
 * OpenMP capable compiler: Required by the Multi Threaded variants. The examples have been developed and tested with gcc.
 * CUDA-aware MPI: Required by the MPI and NVSHMEM variants. The examples have been developed and tested with OpenMPI.
-* NVSHMEM (version 0.4.1 or later): Required by the NVSHMEM variant. Please reach out to nvshmem@nvidia.com for an early access to NVSHMEM.
+* NVSHMEM (version 0.4.1 or later): Required by the NVSHMEM variant.
 
 # Building 
 Each variant come with a Makefile and can be build by simply issuing make, e.g. 
@@ -33,8 +33,8 @@ jacobi
 All variant have the following command line options
 * `-niter`: How many iterations to carry out (default 1000)
 * `-nccheck`: How often to check for convergence (default 1)
-* `-nx`: Size of the domain in x direction (default 7168)
-* `-ny`: Size of the domain in y direction (default 7168)
+* `-nx`: Size of the domain in x direction (default 16384)
+* `-ny`: Size of the domain in y direction (default 16384)
 * `-csv`: Print performance results as -csv
 
 The provided script `bench.sh` contains some examples executing all the benchmarks presented in the GTC 2019 Talk Multi GPU Programming Models.
