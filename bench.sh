@@ -26,7 +26,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 NREP=5
-NXNY="18432"
+NXNY="20480"
 
 #DGX-1V
 #CPUID=0-19
@@ -59,7 +59,7 @@ function find_best () {
 if false; then
     echo "type, nx, ny, iter_max, nccheck, runtime"
     export CUDA_VISIBLE_DEVICES="0"
-    for (( nx=1024; nx <= 18*1024; nx+=1024 )); do
+    for (( nx=1024; nx <= 20*1024; nx+=1024 )); do
         find_best taskset -c ${CPUID} ./single_gpu/jacobi -csv -nx $nx -ny $nx
     done
 fi
