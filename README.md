@@ -8,6 +8,8 @@ This project implements the well known multi GPU Jacobi solver with different mu
 * `multi_threaded_um`              Multi Threaded with OpenMP relying on transparent peer mappings with Unified Memory for inter GPU communication
 * `mpi`                            Multi Process with MPI using CUDA-aware MPI for inter GPU communication
 * `mpi_overlapp`                   Multi Process with MPI using CUDA-aware MPI for inter GPU communication with overlapping communication
+* `nccl`                           Multi Process with MPI and NCCL using NCCL for inter GPU communication
+* `nccl_overlapp`                  Multi Process with MPI and NCCL using NCCL for inter GPU communication with overlapping communication
 * `nvshmem`                        Multi Process with MPI and NVSHMEM using NVSHMEM for inter GPU communication. Other approach, `nvshmem_opt`, might be better for portable performance.
 * `nvshmem_opt`                    Multi Process with MPI and NVSHMEM using NVSHMEM for inter GPU communication with NVSHMEM extension API
 
@@ -18,6 +20,7 @@ Each variant is a stand alone Makefile project and all variants have been descri
 * OpenMP capable compiler: Required by the Multi Threaded variants. The examples have been developed and tested with gcc.
 * CUDA-aware MPI: Required by the MPI and NVSHMEM variants. The examples have been developed and tested with OpenMPI.
 * NVSHMEM (version 0.4.1 or later): Required by the NVSHMEM variant.
+* NCCL (version 2.7 or later): Required by the NCCL variant
 
 # Building 
 Each variant come with a Makefile and can be build by simply issuing make, e.g. 
