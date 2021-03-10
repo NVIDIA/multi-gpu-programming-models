@@ -196,6 +196,15 @@ fi
 
 if false; then
 
+    for (( NUM_GPUS=1; NUM_GPUS <= ${MAX_NUM_GPUS}; NUM_GPUS+=1 )); do
+        export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES_SETTING[${NUM_GPUS}]}
+        find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./nccl_overlapp/jacobi -csv -nx ${NXNY} -ny ${NXNY}
+    done
+
+fi
+
+if false; then
+
     export SHMEM_SYMMETRIC_SIZE=3221225472
     for (( NUM_GPUS=1; NUM_GPUS <= ${MAX_NUM_GPUS}; NUM_GPUS+=1 )); do
         export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES_SETTING[${NUM_GPUS}]}
