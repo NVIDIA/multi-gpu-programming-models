@@ -20,10 +20,13 @@ jacobi: Makefile jacobi.cu
 
 .PHONY.: clean
 clean:
-	rm -f jacobi
+	rm -f jacobi jacobi.qdrep
 
-memcheck: jacobi
-	cuda-memcheck ./jacobi
+sanitize: jacobi
+	compute-sanitizer ./jacobi -niter 10
 
 run: jacobi
 	./jacobi
+
+profile: jacobi
+	nsys profile --trace=cuda,nvtx -o jacobi ./jacobi -niter 10

@@ -31,10 +31,13 @@ jacobi: Makefile jacobi.cu
 
 .PHONY.: clean
 clean:
-	rm -f jacobi jacobi.o
+	rm -f jacobi jacobi.o *.qdrep jacobi.*.compute-sanitizer.log
 
-memcheck: jacobi
-	$(MPIRUN) -np $(NP) cuda-memcheck ./jacobi -nx 512 -ny 512
+sanitize: jacobi
+	$(MPIRUN) -np $(NP) compute-sanitizer --log-file jacobi.%q{OMPI_COMM_WORLD_RANK}.compute-sanitizer.log ./jacobi -niter 10
 
 run: jacobi
 	$(MPIRUN) -np $(NP) ./jacobi
+
+profile: jacobi
+	$(MPIRUN) -np $(NP) nsys profile --trace=mpi,cuda,nvtx -o jacobi.%q{OMPI_COMM_WORLD_RANK} ./jacobi -niter 10

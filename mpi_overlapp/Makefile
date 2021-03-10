@@ -29,13 +29,13 @@ jacobi_kernels.o: Makefile jacobi_kernels.cu
 
 .PHONY.: clean
 clean:
-	rm -f jacobi jacobi_kernels.o *.nvprof
+	rm -f jacobi jacobi_kernels.o *.qdrep jacobi.*.compute-sanitizer.log
 
-memcheck: jacobi
-	$(MPIRUN) -np $(NP) cuda-memcheck ./jacobi
+sanitize: jacobi
+	$(MPIRUN) -np $(NP) compute-sanitizer --log-file jacobi.%q{OMPI_COMM_WORLD_RANK}.compute-sanitizer.log ./jacobi -niter 10
 
 run: jacobi
 	$(MPIRUN) -np $(NP) ./jacobi
 
 profile: jacobi
-	$(MPIRUN) -np $(NP) nvprof -o jacobi.%q{OMPI_COMM_WORLD_RANK}.nvprof --process-name "rank %q{OMPI_COMM_WORLD_RANK}" --context-name "rank %q{OMPI_COMM_WORLD_RANK}"  ./jacobi -niter 10
+	$(MPIRUN) -np $(NP) nsys profile --trace=mpi,cuda,nvtx -o jacobi.%q{OMPI_COMM_WORLD_RANK} ./jacobi -niter 10
