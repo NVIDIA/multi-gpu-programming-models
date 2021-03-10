@@ -1,9 +1,10 @@
-# Copyright (c) 2017-2018, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2021, NVIDIA CORPORATION. All rights reserved.
 NP ?= 1
 NVCC=nvcc
 MPICXX=mpicxx
 MPIRUN ?= mpirun
 CUDA_HOME ?= /usr/local/cuda
+NCCL_HOME ?= /usr
 GENCODE_SM30	:= -gencode arch=compute_30,code=sm_30
 GENCODE_SM35	:= -gencode arch=compute_35,code=sm_35
 GENCODE_SM37	:= -gencode arch=compute_37,code=sm_37
@@ -19,8 +20,8 @@ else
         NVCC_FLAGS = -DHAVE_CUB
 endif
 NVCC_FLAGS += -lineinfo $(GENCODE_FLAGS) -std=c++14
-MPICXX_FLAGS = -DUSE_NVTX -I$(CUDA_HOME)/include -std=c++14
-LD_FLAGS = -L$(CUDA_HOME)/lib64 -lcudart -lnvToolsExt
+MPICXX_FLAGS = -DUSE_NVTX -I$(CUDA_HOME)/include -I$(NCCL_HOME)/include -std=c++14
+LD_FLAGS = -L$(CUDA_HOME)/lib64 -lcudart -lnvToolsExt -lnccl
 jacobi: Makefile jacobi.cpp jacobi_kernels.o
 	$(MPICXX) $(MPICXX_FLAGS) jacobi.cpp jacobi_kernels.o $(LD_FLAGS) -o jacobi
 

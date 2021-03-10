@@ -1,4 +1,4 @@
-/* Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
+/* Copyright (c) 2021, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -92,12 +92,27 @@ const int num_colors = sizeof(colors) / sizeof(uint32_t);
                     #call, __LINE__, __FILE__, cudaGetErrorString(cudaStatus), cudaStatus); \
     }
 
+#include <nccl.h>
+
+#define NCCL_CALL(call)                                                                     \
+    {                                                                                       \
+        ncclResult_t  ncclStatus = call;                                                    \
+        if (ncclSuccess != ncclStatus)                                                      \
+            fprintf(stderr,                                                                 \
+                    "ERROR: NCCL call \"%s\" in line %d of file %s failed "                 \
+                    "with "                                                                 \
+                    "%s (%d).\n",                                                           \
+                    #call, __LINE__, __FILE__, ncclGetErrorString(ncclStatus), ncclStatus); \
+    }
+
 #ifdef USE_DOUBLE
 typedef double real;
 #define MPI_REAL_TYPE MPI_DOUBLE
+#define NCCL_REAL_TYPE ncclDouble
 #else
 typedef float real;
 #define MPI_REAL_TYPE MPI_FLOAT
+#define NCCL_REAL_TYPE ncclFloat
 #endif
 
 constexpr real tol = 1.0e-8;
@@ -141,6 +156,10 @@ int main(int argc, char* argv[]) {
     int size;
     MPI_CALL(MPI_Comm_size(MPI_COMM_WORLD, &size));
 
+    ncclUniqueId nccl_uid;
+    if (rank == 0) NCCL_CALL(ncclGetUniqueId(&nccl_uid));
+    MPI_CALL(MPI_Bcast(&nccl_uid, sizeof(ncclUniqueId), MPI_BYTE, 0, MPI_COMM_WORLD));
+
     const int iter_max = get_argval<int>(argv, argv + argc, "-niter", 1000);
     const int nccheck = get_argval<int>(argv, argv + argc, "-nccheck", 1);
     const int nx = get_argval<int>(argv, argv + argc, "-nx", 16384);
@@ -160,6 +179,17 @@ int main(int argc, char* argv[]) {
 
     CUDA_RT_CALL(cudaSetDevice(local_rank));
     CUDA_RT_CALL(cudaFree(0));
+
+    ncclComm_t nccl_comm;
+    NCCL_CALL(ncclCommInitRank(&nccl_comm, size, nccl_uid, rank));
+    int nccl_version = 0;
+    NCCL_CALL(ncclGetVersion(&nccl_version));
+    if ( nccl_version < 2700 ) {
+        fprintf(stderr,"ERROR NCCL 2.7 or newer is required for Point To Point communicaiton.\n");
+        NCCL_CALL(ncclCommDestroy(nccl_comm));
+        MPI_CALL(MPI_Finalize());
+        return 1;
+    }
 
     real* a_ref_h;
     CUDA_RT_CALL(cudaMallocHost(&a_ref_h, nx * ny * sizeof(real)));
@@ -213,17 +243,14 @@ int main(int argc, char* argv[]) {
     CUDA_RT_CALL(cudaDeviceGetStreamPriorityRange(&leastPriority, &greatestPriority));
     cudaStream_t compute_stream;
     CUDA_RT_CALL(cudaStreamCreateWithPriority(&compute_stream, cudaStreamDefault, leastPriority));
-    cudaStream_t push_top_stream;
+    cudaStream_t push_stream;
     CUDA_RT_CALL(
-        cudaStreamCreateWithPriority(&push_top_stream, cudaStreamDefault, greatestPriority));
-    cudaStream_t push_bottom_stream;
-    CUDA_RT_CALL(
-        cudaStreamCreateWithPriority(&push_bottom_stream, cudaStreamDefault, greatestPriority));
+        cudaStreamCreateWithPriority(&push_stream, cudaStreamDefault, greatestPriority));
 
-    cudaEvent_t push_top_done;
-    CUDA_RT_CALL(cudaEventCreateWithFlags(&push_top_done, cudaEventDisableTiming));
-    cudaEvent_t push_bottom_done;
-    CUDA_RT_CALL(cudaEventCreateWithFlags(&push_bottom_done, cudaEventDisableTiming));
+    cudaEvent_t push_prep_done;
+    CUDA_RT_CALL(cudaEventCreateWithFlags(&push_prep_done, cudaEventDisableTiming));
+    cudaEvent_t push_done;
+    CUDA_RT_CALL(cudaEventCreateWithFlags(&push_done, cudaEventDisableTiming));
     cudaEvent_t reset_l2norm_done;
     CUDA_RT_CALL(cudaEventCreateWithFlags(&reset_l2norm_done, cudaEventDisableTiming));
 
@@ -232,16 +259,24 @@ int main(int argc, char* argv[]) {
     real* l2_norm_h;
     CUDA_RT_CALL(cudaMallocHost(&l2_norm_h, sizeof(real)));
 
-    PUSH_RANGE("MPI_Warmup", 5)
+    PUSH_RANGE("NCCL_Warmup", 5)
     for (int i = 0; i < 10; ++i) {
         const int top = rank > 0 ? rank - 1 : (size - 1);
         const int bottom = (rank + 1) % size;
-        MPI_CALL(MPI_Sendrecv(a_new + iy_start * nx, nx, MPI_REAL_TYPE, top, 0,
-                              a_new + (iy_end * nx), nx, MPI_REAL_TYPE, bottom, 0, MPI_COMM_WORLD,
-                              MPI_STATUS_IGNORE));
-        CUDA_RT_CALL(cudaStreamSynchronize(push_bottom_stream));
-        MPI_CALL(MPI_Sendrecv(a_new + (iy_end - 1) * nx, nx, MPI_REAL_TYPE, bottom, 0, a_new, nx,
-                              MPI_REAL_TYPE, top, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE));
+        NCCL_CALL(ncclGroupStart());
+        NCCL_CALL(ncclRecv(a_new,                     nx, NCCL_REAL_TYPE, top,    nccl_comm, compute_stream));
+        NCCL_CALL(ncclSend(a_new + (iy_end - 1) * nx, nx, NCCL_REAL_TYPE, bottom, nccl_comm, compute_stream));
+        if ( nccl_version < 2800 && top == bottom )
+        {
+            //each ncclSend/ncclRecv call in a group need to target a unique peer so groups are needed 
+            //if we only have two ranks.
+            NCCL_CALL(ncclGroupEnd());
+            NCCL_CALL(ncclGroupStart());
+        }
+        NCCL_CALL(ncclRecv(a_new + (iy_end * nx),     nx, NCCL_REAL_TYPE, bottom, nccl_comm, compute_stream));
+        NCCL_CALL(ncclSend(a_new + iy_start * nx,     nx, NCCL_REAL_TYPE, top,    nccl_comm, compute_stream));
+        NCCL_CALL(ncclGroupEnd());
+        CUDA_RT_CALL(cudaStreamSynchronize(compute_stream));
     }
     POP_RANGE
 
@@ -265,23 +300,20 @@ int main(int argc, char* argv[]) {
         CUDA_RT_CALL(cudaMemsetAsync(l2_norm_d, 0, sizeof(real), compute_stream));
         CUDA_RT_CALL(cudaEventRecord(reset_l2norm_done, compute_stream));
 
-        CUDA_RT_CALL(cudaStreamWaitEvent(push_top_stream, reset_l2norm_done, 0));
+        CUDA_RT_CALL(cudaStreamWaitEvent(push_stream, reset_l2norm_done, 0));
         calculate_norm = (iter % nccheck) == 0 || (!csv && (iter % 100) == 0);
         launch_jacobi_kernel(a_new, a, l2_norm_d, iy_start, (iy_start + 1), nx, calculate_norm,
-                             push_top_stream);
-        CUDA_RT_CALL(cudaEventRecord(push_top_done, push_top_stream));
+                             push_stream);
 
-        CUDA_RT_CALL(cudaStreamWaitEvent(push_bottom_stream, reset_l2norm_done, 0));
         launch_jacobi_kernel(a_new, a, l2_norm_d, (iy_end - 1), iy_end, nx, calculate_norm,
-                             push_bottom_stream);
-        CUDA_RT_CALL(cudaEventRecord(push_bottom_done, push_bottom_stream));
+                             push_stream);
+        CUDA_RT_CALL(cudaEventRecord(push_prep_done, push_stream));
 
         launch_jacobi_kernel(a_new, a, l2_norm_d, (iy_start + 1), (iy_end - 1), nx, calculate_norm,
                              compute_stream);
 
         if (calculate_norm) {
-            CUDA_RT_CALL(cudaStreamWaitEvent(compute_stream, push_top_done, 0));
-            CUDA_RT_CALL(cudaStreamWaitEvent(compute_stream, push_bottom_done, 0));
+            CUDA_RT_CALL(cudaStreamWaitEvent(compute_stream, push_prep_done, 0));
             CUDA_RT_CALL(cudaMemcpyAsync(l2_norm_h, l2_norm_d, sizeof(real), cudaMemcpyDeviceToHost,
                                          compute_stream));
         }
@@ -290,14 +322,21 @@ int main(int argc, char* argv[]) {
         const int bottom = (rank + 1) % size;
 
         // Apply periodic boundary conditions
-        CUDA_RT_CALL(cudaStreamSynchronize(push_top_stream));
-        PUSH_RANGE("MPI", 5)
-        MPI_CALL(MPI_Sendrecv(a_new + iy_start * nx, nx, MPI_REAL_TYPE, top, 0,
-                              a_new + (iy_end * nx), nx, MPI_REAL_TYPE, bottom, 0, MPI_COMM_WORLD,
-                              MPI_STATUS_IGNORE));
-        CUDA_RT_CALL(cudaStreamSynchronize(push_bottom_stream));
-        MPI_CALL(MPI_Sendrecv(a_new + (iy_end - 1) * nx, nx, MPI_REAL_TYPE, bottom, 0, a_new, nx,
-                              MPI_REAL_TYPE, top, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE));
+        PUSH_RANGE("NCCL_LAUNCH", 5)
+        NCCL_CALL(ncclGroupStart());
+        NCCL_CALL(ncclRecv(a_new,                     nx, NCCL_REAL_TYPE, top,    nccl_comm, push_stream));
+        NCCL_CALL(ncclSend(a_new + (iy_end - 1) * nx, nx, NCCL_REAL_TYPE, bottom, nccl_comm, push_stream));
+        if ( nccl_version < 2800 && top == bottom )
+        {
+            //each ncclSend/ncclRecv call in a group need to target a unique peer so groups are needed 
+            //if we only have two ranks.
+            NCCL_CALL(ncclGroupEnd());
+            NCCL_CALL(ncclGroupStart());
+        }
+        NCCL_CALL(ncclRecv(a_new + (iy_end * nx),     nx, NCCL_REAL_TYPE, bottom, nccl_comm, push_stream));
+        NCCL_CALL(ncclSend(a_new + iy_start * nx,     nx, NCCL_REAL_TYPE, top,    nccl_comm, push_stream));
+        NCCL_CALL(ncclGroupEnd());
+        CUDA_RT_CALL(cudaEventRecord(push_done, push_stream));
         POP_RANGE
 
         if (calculate_norm) {
@@ -309,10 +348,12 @@ int main(int argc, char* argv[]) {
                 printf("%5d, %0.6f\n", iter, l2_norm);
             }
         }
+        CUDA_RT_CALL(cudaStreamWaitEvent(compute_stream, push_done, 0));
 
         std::swap(a_new, a);
         iter++;
     }
+    CUDA_RT_CALL(cudaDeviceSynchronize());
     double stop = MPI_Wtime();
     POP_RANGE
 
@@ -340,7 +381,7 @@ int main(int argc, char* argv[]) {
 
     if (rank == 0 && result_correct) {
         if (csv) {
-            printf("mpi_overlapp, %d, %d, %d, %d, %d, 1, %f, %f\n", nx, ny, iter_max, nccheck, size,
+            printf("nccl_overlapp, %d, %d, %d, %d, %d, 1, %f, %f\n", nx, ny, iter_max, nccheck, size,
                    (stop - start), runtime_serial);
         } else {
             printf("Num GPUs: %d.\n", size);
@@ -352,10 +393,9 @@ int main(int argc, char* argv[]) {
         }
     }
     CUDA_RT_CALL(cudaEventDestroy(reset_l2norm_done));
-    CUDA_RT_CALL(cudaEventDestroy(push_bottom_done));
-    CUDA_RT_CALL(cudaEventDestroy(push_top_done));
-    CUDA_RT_CALL(cudaStreamDestroy(push_bottom_stream));
-    CUDA_RT_CALL(cudaStreamDestroy(push_top_stream));
+    CUDA_RT_CALL(cudaEventDestroy(push_done));
+    CUDA_RT_CALL(cudaEventDestroy(push_prep_done));
+    CUDA_RT_CALL(cudaStreamDestroy(push_stream));
     CUDA_RT_CALL(cudaStreamDestroy(compute_stream));
 
     CUDA_RT_CALL(cudaFreeHost(l2_norm_h));
@@ -366,6 +406,8 @@ int main(int argc, char* argv[]) {
 
     CUDA_RT_CALL(cudaFreeHost(a_h));
     CUDA_RT_CALL(cudaFreeHost(a_ref_h));
+
+    NCCL_CALL(ncclCommDestroy(nccl_comm));
 
     MPI_CALL(MPI_Finalize());
     return (result_correct == 1) ? 0 : 1;
