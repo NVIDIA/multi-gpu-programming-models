@@ -20,7 +20,7 @@ Each variant is a stand alone Makefile project and all variants have been descri
 * OpenMP capable compiler: Required by the Multi Threaded variants. The examples have been developed and tested with gcc.
 * CUDA-aware MPI: Required by the MPI and NVSHMEM variants. The examples have been developed and tested with OpenMPI.
 * NVSHMEM (version 0.4.1 or later): Required by the NVSHMEM variant.
-* NCCL (version 2.7 or later): Required by the NCCL variant
+* NCCL (version 2.8 or later): Required by the NCCL variant
 
 # Building 
 Each variant come with a Makefile and can be build by simply issuing make, e.g. 

@@ -184,8 +184,8 @@ int main(int argc, char* argv[]) {
     NCCL_CALL(ncclCommInitRank(&nccl_comm, size, nccl_uid, rank));
     int nccl_version = 0;
     NCCL_CALL(ncclGetVersion(&nccl_version));
-    if ( nccl_version < 2700 ) {
-        fprintf(stderr,"ERROR NCCL 2.7 or newer is required for Point To Point communicaiton.\n");
+    if ( nccl_version < 2800 ) {
+        fprintf(stderr,"ERROR NCCL 2.8 or newer is required.\n");
         NCCL_CALL(ncclCommDestroy(nccl_comm));
         MPI_CALL(MPI_Finalize());
         return 1;
@@ -266,13 +266,6 @@ int main(int argc, char* argv[]) {
         NCCL_CALL(ncclGroupStart());
         NCCL_CALL(ncclRecv(a_new,                     nx, NCCL_REAL_TYPE, top,    nccl_comm, compute_stream));
         NCCL_CALL(ncclSend(a_new + (iy_end - 1) * nx, nx, NCCL_REAL_TYPE, bottom, nccl_comm, compute_stream));
-        if ( nccl_version < 2800 && top == bottom )
-        {
-            //each ncclSend/ncclRecv call in a group need to target a unique peer so groups are needed 
-            //if we only have two ranks.
-            NCCL_CALL(ncclGroupEnd());
-            NCCL_CALL(ncclGroupStart());
-        }
         NCCL_CALL(ncclRecv(a_new + (iy_end * nx),     nx, NCCL_REAL_TYPE, bottom, nccl_comm, compute_stream));
         NCCL_CALL(ncclSend(a_new + iy_start * nx,     nx, NCCL_REAL_TYPE, top,    nccl_comm, compute_stream));
         NCCL_CALL(ncclGroupEnd());
@@ -326,13 +319,6 @@ int main(int argc, char* argv[]) {
         NCCL_CALL(ncclGroupStart());
         NCCL_CALL(ncclRecv(a_new,                     nx, NCCL_REAL_TYPE, top,    nccl_comm, push_stream));
         NCCL_CALL(ncclSend(a_new + (iy_end - 1) * nx, nx, NCCL_REAL_TYPE, bottom, nccl_comm, push_stream));
-        if ( nccl_version < 2800 && top == bottom )
-        {
-            //each ncclSend/ncclRecv call in a group need to target a unique peer so groups are needed 
-            //if we only have two ranks.
-            NCCL_CALL(ncclGroupEnd());
-            NCCL_CALL(ncclGroupStart());
-        }
         NCCL_CALL(ncclRecv(a_new + (iy_end * nx),     nx, NCCL_REAL_TYPE, bottom, nccl_comm, push_stream));
         NCCL_CALL(ncclSend(a_new + iy_start * nx,     nx, NCCL_REAL_TYPE, top,    nccl_comm, push_stream));
         NCCL_CALL(ncclGroupEnd());
