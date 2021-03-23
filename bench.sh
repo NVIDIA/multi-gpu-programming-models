@@ -30,18 +30,24 @@ NXNY="20480"
 
 #DGX-1V
 #CPUID=0-19
+#FIRST_CORE=0
 #MAX_NUM_GPUS=8
 #CUDA_VISIBLE_DEVICES_SETTING=("0" "0" "0,3" "0,3,2" "0,3,2,1" "3,2,1,5,7" "0,3,2,1,5,4" "0,4,7,6,5,1,2" "0,3,2,1,5,6,7,4" )
+#CPU_LIST="0,1,2,3,4,5,6,7"
 
 #DGX-2
 #CPUID=0-23
+#FIRST_CORE=0
 #MAX_NUM_GPUS=16
 #CUDA_VISIBLE_DEVICES_SETTING=("0" "0" "0,1" "0,1,2" "0,1,2,3" "0,1,2,3,4" "0,1,2,3,4,5" "0,1,2,3,4,5,6" "0,1,2,3,4,5,6,7" "0,1,2,3,4,5,6,7,8" "0,1,2,3,4,5,6,7,8,9" "0,1,2,3,4,5,6,7,8,9,10" "0,1,2,3,4,5,6,7,8,9,10,11" "0,1,2,3,4,5,6,7,8,9,10,11,12" "0,1,2,3,4,5,6,7,8,9,10,11,12,13" "0,1,2,3,4,5,6,7,8,9,10,11,12,13,14" "0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15" )
+#CPU_LIST="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15"
 
 #DGX-A100
 CPUID=48-63
+FIRST_CORE=48
 MAX_NUM_GPUS=8
 CUDA_VISIBLE_DEVICES_SETTING=("0" "0" "0,1" "0,1,2" "0,1,2,3" "0,1,2,3,4" "0,1,2,3,4,5" "0,1,2,3,4,5,6" "0,1,2,3,4,5,6,7" )
+CPU_LIST="48,49,50,51,52,53,54,55"
 
 IFS=$'\n'
 function find_best () {
@@ -53,10 +59,10 @@ function find_best () {
     unset RESULTS
 }
 
-#sudo nvidia-smi -ac 958,1597
+#nvidia-smi -ac 1593,1410
 
 #Single GPU
-if false; then
+if true; then
     echo "type, nx, ny, iter_max, nccheck, runtime"
     export CUDA_VISIBLE_DEVICES="0"
     for (( nx=1024; nx <= 20*1024; nx+=1024 )); do
@@ -108,12 +114,15 @@ fi
 export OMP_PROC_BIND=TRUE
 
 #multi threaded copy
-if false; then
+if true; then
 
-    OMP_PLACES="{0}"
+    NEXT_CORE=${FIRST_CORE}
+    OMP_PLACES="{$((NEXT_CORE))}"
+    NEXT_CORE=$((NEXT_CORE+1))
     for (( NUM_GPUS=1; NUM_GPUS <= ${MAX_NUM_GPUS}; NUM_GPUS+=1 )); do
         if (( NUM_GPUS > 1 )); then
-            OMP_PLACES="${OMP_PLACES},{$((NUM_GPUS-1))}"
+            OMP_PLACES="${OMP_PLACES},{$((NEXT_CORE))}"
+            NEXT_CORE=$((NEXT_CORE+1))
         fi
         export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES_SETTING[${NUM_GPUS}]}
         export OMP_PLACES
@@ -123,12 +132,15 @@ if false; then
 fi
 
 #multi threaded copy overlap
-if false; then
+if true; then
 
-    OMP_PLACES="{0}"
+    NEXT_CORE=${FIRST_CORE}
+    OMP_PLACES="{$((NEXT_CORE))}"
+    NEXT_CORE=$((NEXT_CORE+1))
     for (( NUM_GPUS=1; NUM_GPUS <= ${MAX_NUM_GPUS}; NUM_GPUS+=1 )); do
         if (( NUM_GPUS > 1 )); then
-            OMP_PLACES="${OMP_PLACES},{$((NUM_GPUS-1))}"
+            OMP_PLACES="${OMP_PLACES},{$((NEXT_CORE))}"
+            NEXT_CORE=$((NEXT_CORE+1))
         fi
         export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES_SETTING[${NUM_GPUS}]}
         export OMP_PLACES
@@ -138,12 +150,15 @@ if false; then
 fi
 
 #multi threaded p2p
-if false; then
+if true; then
 
-    OMP_PLACES="{0}"
+    NEXT_CORE=${FIRST_CORE}
+    OMP_PLACES="{$((NEXT_CORE))}"
+    NEXT_CORE=$((NEXT_CORE+1))
     for (( NUM_GPUS=1; NUM_GPUS <= ${MAX_NUM_GPUS}; NUM_GPUS+=1 )); do
         if (( NUM_GPUS > 1 )); then
-            OMP_PLACES="${OMP_PLACES},{$((NUM_GPUS-1))}"
+            OMP_PLACES="${OMP_PLACES},{$((NEXT_CORE))}"
+            NEXT_CORE=$((NEXT_CORE+1))
         fi
         export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES_SETTING[${NUM_GPUS}]}
         export OMP_PLACES
@@ -153,12 +168,15 @@ if false; then
 fi
 
 #multi threaded p2p with delayed check
-if false; then
+if true; then
 
-    OMP_PLACES="{0}"
+    NEXT_CORE=${FIRST_CORE}
+    OMP_PLACES="{$((NEXT_CORE))}"
+    NEXT_CORE=$((NEXT_CORE+1))
     for (( NUM_GPUS=1; NUM_GPUS <= ${MAX_NUM_GPUS}; NUM_GPUS+=1 )); do
         if (( NUM_GPUS > 1 )); then
-            OMP_PLACES="${OMP_PLACES},{$((NUM_GPUS-1))}"
+            OMP_PLACES="${OMP_PLACES},{$((NEXT_CORE))}"
+            NEXT_CORE=$((NEXT_CORE+1))
         fi
         export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES_SETTING[${NUM_GPUS}]}
         export OMP_PLACES
@@ -167,48 +185,48 @@ if false; then
 
 fi
 
-if false; then
+if true; then
 
     for (( NUM_GPUS=1; NUM_GPUS <= ${MAX_NUM_GPUS}; NUM_GPUS+=1 )); do
         export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES_SETTING[${NUM_GPUS}]}
-        find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./mpi/jacobi -csv -nx ${NXNY} -ny ${NXNY}
+        find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --bind-to cpu-list:ordered --cpu-list ${CPU_LIST} ./mpi/jacobi -csv -nx ${NXNY} -ny ${NXNY}
     done
 
 fi
 
-if false; then
+if true; then
 
     for (( NUM_GPUS=1; NUM_GPUS <= ${MAX_NUM_GPUS}; NUM_GPUS+=1 )); do
         export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES_SETTING[${NUM_GPUS}]}
-        find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./mpi_overlapp/jacobi -csv -nx ${NXNY} -ny ${NXNY}
+        find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --bind-to cpu-list:ordered --cpu-list ${CPU_LIST} ./mpi_overlapp/jacobi -csv -nx ${NXNY} -ny ${NXNY}
     done
 
 fi
 
-if false; then
+if true; then
 
     for (( NUM_GPUS=1; NUM_GPUS <= ${MAX_NUM_GPUS}; NUM_GPUS+=1 )); do
         export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES_SETTING[${NUM_GPUS}]}
-        find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./nccl/jacobi -csv -nx ${NXNY} -ny ${NXNY}
+        find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --bind-to cpu-list:ordered --cpu-list ${CPU_LIST} ./nccl/jacobi -csv -nx ${NXNY} -ny ${NXNY}
     done
 
 fi
 
-if false; then
+if true; then
 
     for (( NUM_GPUS=1; NUM_GPUS <= ${MAX_NUM_GPUS}; NUM_GPUS+=1 )); do
         export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES_SETTING[${NUM_GPUS}]}
-        find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --map-by ppr:8:socket --bind-to core ./nccl_overlapp/jacobi -csv -nx ${NXNY} -ny ${NXNY}
+        find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --bind-to cpu-list:ordered --cpu-list ${CPU_LIST} ./nccl_overlapp/jacobi -csv -nx ${NXNY} -ny ${NXNY}
     done
 
 fi
 
-if false; then
+if true; then
 
-    export SHMEM_SYMMETRIC_SIZE=3221225472
+    export NVSHMEM_SYMMETRIC_SIZE=461733888
     for (( NUM_GPUS=1; NUM_GPUS <= ${MAX_NUM_GPUS}; NUM_GPUS+=1 )); do
         export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES_SETTING[${NUM_GPUS}]}
-        find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES -x SHMEM_SYMMETRIC_SIZE --map-by ppr:8:socket --bind-to core ./nvshmem/jacobi -csv -nx ${NXNY} -ny ${NXNY}
+        find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES -x SHMEM_SYMMETRIC_SIZE --bind-to cpu-list:ordered --cpu-list ${CPU_LIST} ./nvshmem/jacobi -csv -nx ${NXNY} -ny ${NXNY}
     done
 
 fi
