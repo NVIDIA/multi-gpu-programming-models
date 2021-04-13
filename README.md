@@ -13,7 +13,9 @@ This project implements the well known multi GPU Jacobi solver with different mu
 * `nvshmem`                        Multi Process with MPI and NVSHMEM using NVSHMEM for inter GPU communication. Other approach, `nvshmem_opt`, might be better for portable performance.
 * `nvshmem_opt`                    Multi Process with MPI and NVSHMEM using NVSHMEM for inter GPU communication with NVSHMEM extension API
 
-Each variant is a stand alone Makefile project and all variants have been described in the GTC 2019 Talk [Multi GPU Programming Models](http://on-demand-gtc.gputechconf.com/gtc-quicklink/4sAYj)
+Each variant is a stand alone Makefile project and most variants have been discussed in various GTC Talks, e.g.:
+* `single_threaded_copy`, `multi_threaded_copy`, `multi_threaded_copy_overlapp`, `multi_threaded_p2p`, `multi_threaded_p2p_opt`, `mpi`, `mpi_overlapp` and `nvshmem` on DGX-1V at GTC Europe 2017 in [23031 - Multi GPU Programming Models](http://on-demand-gtc.gputechconf.com/gtc-quicklink/5fwZQzZ)
+* `single_threaded_copy`, `multi_threaded_copy`, `multi_threaded_copy_overlapp`, `multi_threaded_p2p`, `multi_threaded_p2p_opt`, `mpi`, `mpi_overlapp` and `nvshmem` on DGX-2 at GTC 2019 in [S9139 - Multi GPU Programming Models](http://on-demand-gtc.gputechconf.com/gtc-quicklink/4sAYj)
 
 # Requirements
 * CUDA: verison 11.0 (9.2 if build with `DISABLE_CUB=1`) or later is required by all variants.
