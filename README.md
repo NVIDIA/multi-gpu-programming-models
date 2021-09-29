@@ -9,7 +9,7 @@ This project implements the well known multi GPU Jacobi solver with different mu
 * `mpi`                            Multi Process with MPI using CUDA-aware MPI for inter GPU communication
 * `mpi_overlap`                   Multi Process with MPI using CUDA-aware MPI for inter GPU communication with overlapping communication
 * `nccl`                           Multi Process with MPI and NCCL using NCCL for inter GPU communication
-* `nccl_overlapp`                  Multi Process with MPI and NCCL using NCCL for inter GPU communication with overlapping communication
+* `nccl_overlap`                  Multi Process with MPI and NCCL using NCCL for inter GPU communication with overlapping communication
 * `nvshmem`                        Multi Process with MPI and NVSHMEM using NVSHMEM for inter GPU communication. Other approach, `nvshmem_opt`, might be better for portable performance.
 * `nvshmem_opt`                    Multi Process with MPI and NVSHMEM using NVSHMEM for inter GPU communication with NVSHMEM extension API
 
