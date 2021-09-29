@@ -408,7 +408,7 @@ int main(int argc, char* argv[]) {
             if (result_correct) {
                 if (csv) {
                     printf(
-                        "multi_threaded_copy_overlapp, %d, %d, %d, %d, %d, 1, "
+                        "multi_threaded_copy_overlap, %d, %d, %d, %d, %d, 1, "
                         "%f, %f\n",
                         nx, ny, iter_max, nccheck, num_devices, (stop - start), runtime_serial);
                 } else {

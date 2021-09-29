@@ -144,7 +144,7 @@ if true; then
         fi
         export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES_SETTING[${NUM_GPUS}]}
         export OMP_PLACES
-        find_best ./multi_threaded_copy_overlapp/jacobi -csv -nx ${NXNY} -ny ${NXNY}
+        find_best ./multi_threaded_copy_overlap/jacobi -csv -nx ${NXNY} -ny ${NXNY}
     done
 
 fi
