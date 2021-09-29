@@ -146,6 +146,7 @@ int main(int argc, char* argv[]) {
     const int nx = get_argval<int>(argv, argv + argc, "-nx", 16384);
     const int ny = get_argval<int>(argv, argv + argc, "-ny", 16384);
     const bool csv = get_arg(argv, argv + argc, "-csv");
+    const bool use_hp_streams = get_arg(argv, argv + argc, "-use_hp_streams");
 
     int local_rank = -1;
     {
@@ -212,14 +213,20 @@ int main(int argc, char* argv[]) {
     int greatestPriority = leastPriority;
     CUDA_RT_CALL(cudaDeviceGetStreamPriorityRange(&leastPriority, &greatestPriority));
     cudaStream_t compute_stream;
-    CUDA_RT_CALL(cudaStreamCreateWithPriority(&compute_stream, cudaStreamDefault, leastPriority));
     cudaStream_t push_top_stream;
-    CUDA_RT_CALL(
-        cudaStreamCreateWithPriority(&push_top_stream, cudaStreamDefault, greatestPriority));
     cudaStream_t push_bottom_stream;
-    CUDA_RT_CALL(
-        cudaStreamCreateWithPriority(&push_bottom_stream, cudaStreamDefault, greatestPriority));
-
+    if (use_hp_streams) {
+        CUDA_RT_CALL(cudaStreamCreateWithPriority(&compute_stream, cudaStreamDefault, leastPriority));
+        CUDA_RT_CALL(
+            cudaStreamCreateWithPriority(&push_top_stream, cudaStreamDefault, greatestPriority));
+        CUDA_RT_CALL(
+            cudaStreamCreateWithPriority(&push_bottom_stream, cudaStreamDefault, greatestPriority));
+    } else {
+        CUDA_RT_CALL(cudaStreamCreate(&compute_stream));
+        CUDA_RT_CALL(cudaStreamCreate(&push_top_stream));
+        CUDA_RT_CALL(cudaStreamCreate(&push_bottom_stream));
+    }
+    
     cudaEvent_t push_top_done;
     CUDA_RT_CALL(cudaEventCreateWithFlags(&push_top_done, cudaEventDisableTiming));
     cudaEvent_t push_bottom_done;
@@ -239,7 +246,6 @@ int main(int argc, char* argv[]) {
         MPI_CALL(MPI_Sendrecv(a_new + iy_start * nx, nx, MPI_REAL_TYPE, top, 0,
                               a_new + (iy_end * nx), nx, MPI_REAL_TYPE, bottom, 0, MPI_COMM_WORLD,
                               MPI_STATUS_IGNORE));
-        CUDA_RT_CALL(cudaStreamSynchronize(push_bottom_stream));
         MPI_CALL(MPI_Sendrecv(a_new + (iy_end - 1) * nx, nx, MPI_REAL_TYPE, bottom, 0, a_new, nx,
                               MPI_REAL_TYPE, top, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE));
     }
@@ -265,6 +271,11 @@ int main(int argc, char* argv[]) {
         CUDA_RT_CALL(cudaMemsetAsync(l2_norm_d, 0, sizeof(real), compute_stream));
         CUDA_RT_CALL(cudaEventRecord(reset_l2norm_done, compute_stream));
 
+        if (use_hp_streams) {
+            launch_jacobi_kernel(a_new, a, l2_norm_d, (iy_start + 1), (iy_end - 1), nx,
+                                 calculate_norm, compute_stream);
+        }
+
         CUDA_RT_CALL(cudaStreamWaitEvent(push_top_stream, reset_l2norm_done, 0));
         calculate_norm = (iter % nccheck) == 0 || (!csv && (iter % 100) == 0);
         launch_jacobi_kernel(a_new, a, l2_norm_d, iy_start, (iy_start + 1), nx, calculate_norm,
@@ -276,8 +287,10 @@ int main(int argc, char* argv[]) {
                              push_bottom_stream);
         CUDA_RT_CALL(cudaEventRecord(push_bottom_done, push_bottom_stream));
 
-        launch_jacobi_kernel(a_new, a, l2_norm_d, (iy_start + 1), (iy_end - 1), nx, calculate_norm,
-                             compute_stream);
+        if (!use_hp_streams) {
+            launch_jacobi_kernel(a_new, a, l2_norm_d, (iy_start + 1), (iy_end - 1), nx,
+                                 calculate_norm, compute_stream);
+        }
 
         if (calculate_norm) {
             CUDA_RT_CALL(cudaStreamWaitEvent(compute_stream, push_top_done, 0));
