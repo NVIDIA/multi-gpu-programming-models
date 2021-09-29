@@ -198,7 +198,7 @@ if true; then
 
     for (( NUM_GPUS=1; NUM_GPUS <= ${MAX_NUM_GPUS}; NUM_GPUS+=1 )); do
         export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES_SETTING[${NUM_GPUS}]}
-        find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --bind-to cpu-list:ordered --cpu-list ${CPU_LIST} ./mpi_overlapp/jacobi -csv -nx ${NXNY} -ny ${NXNY}
+        find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --bind-to cpu-list:ordered --cpu-list ${CPU_LIST} ./mpi_overlap/jacobi -csv -nx ${NXNY} -ny ${NXNY}
     done
 
 fi
