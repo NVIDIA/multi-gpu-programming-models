@@ -155,6 +155,9 @@ int main(int argc, char* argv[]) {
     MPI_CALL(MPI_Comm_rank(MPI_COMM_WORLD, &rank));
     int size;
     MPI_CALL(MPI_Comm_size(MPI_COMM_WORLD, &size));
+    int num_devices = 0;
+    CUDA_RT_CALL(cudaGetDeviceCount(&num_devices));
+
 
     ncclUniqueId nccl_uid;
     if (rank == 0) NCCL_CALL(ncclGetUniqueId(&nccl_uid));
@@ -166,8 +169,9 @@ int main(int argc, char* argv[]) {
     const int ny = get_argval<int>(argv, argv + argc, "-ny", 16384);
     const bool csv = get_arg(argv, argv + argc, "-csv");
 
-    int local_rank = -1;
-    {
+    if(num_devices > 1) {
+        int local_rank = -1;
+     
         MPI_Comm local_comm;
         MPI_CALL(MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, rank, MPI_INFO_NULL,
                                      &local_comm));
@@ -175,10 +179,15 @@ int main(int argc, char* argv[]) {
         MPI_CALL(MPI_Comm_rank(local_comm, &local_rank));
 
         MPI_CALL(MPI_Comm_free(&local_comm));
+
+        CUDA_RT_CALL(cudaSetDevice(local_rank));
+        CUDA_RT_CALL(cudaFree(0));
     }
 
-    CUDA_RT_CALL(cudaSetDevice(local_rank));
-    CUDA_RT_CALL(cudaFree(0));
+    else {
+        CUDA_RT_CALL(cudaSetDevice(0));
+        CUDA_RT_CALL(cudaFree(0));
+    }
 
     ncclComm_t nccl_comm;
     NCCL_CALL(ncclCommInitRank(&nccl_comm, size, nccl_uid, rank));

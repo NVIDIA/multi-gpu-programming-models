@@ -140,6 +140,8 @@ int main(int argc, char* argv[]) {
     MPI_CALL(MPI_Comm_rank(MPI_COMM_WORLD, &rank));
     int size;
     MPI_CALL(MPI_Comm_size(MPI_COMM_WORLD, &size));
+    int num_devices = 0;
+    CUDA_RT_CALL(cudaGetDeviceCount(&num_devices));
 
     const int iter_max = get_argval<int>(argv, argv + argc, "-niter", 1000);
     const int nccheck = get_argval<int>(argv, argv + argc, "-nccheck", 1);
@@ -148,8 +150,9 @@ int main(int argc, char* argv[]) {
     const bool csv = get_arg(argv, argv + argc, "-csv");
     const bool use_hp_streams = get_arg(argv, argv + argc, "-use_hp_streams");
 
-    int local_rank = -1;
-    {
+    if(num_devices > 1) {
+        int local_rank = -1;
+     
         MPI_Comm local_comm;
         MPI_CALL(MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, rank, MPI_INFO_NULL,
                                      &local_comm));
@@ -157,10 +160,15 @@ int main(int argc, char* argv[]) {
         MPI_CALL(MPI_Comm_rank(local_comm, &local_rank));
 
         MPI_CALL(MPI_Comm_free(&local_comm));
+
+        CUDA_RT_CALL(cudaSetDevice(local_rank));
+        CUDA_RT_CALL(cudaFree(0));
     }
 
-    CUDA_RT_CALL(cudaSetDevice(local_rank));
-    CUDA_RT_CALL(cudaFree(0));
+    else {
+        CUDA_RT_CALL(cudaSetDevice(0));
+        CUDA_RT_CALL(cudaFree(0));
+    }
 
     real* a_ref_h;
     CUDA_RT_CALL(cudaMallocHost(&a_ref_h, nx * ny * sizeof(real)));

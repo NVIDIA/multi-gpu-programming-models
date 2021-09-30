@@ -227,29 +227,26 @@ int main(int argc, char* argv[]) {
     int num_devices;
     CUDA_RT_CALL(cudaGetDeviceCount(&num_devices));
 
-    int local_rank = -1, local_size = 1;
-    {
+    if(num_devices > 1) {
+        int local_rank = -1;
+     
         MPI_Comm local_comm;
-        MPI_Info info;
-        MPI_CALL(MPI_Info_create(&info));
-        MPI_CALL(
-            MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, rank, info, &local_comm));
+        MPI_CALL(MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, rank, MPI_INFO_NULL,
+                                     &local_comm));
 
         MPI_CALL(MPI_Comm_rank(local_comm, &local_rank));
-        MPI_CALL(MPI_Comm_size(local_comm, &local_size));
-        if (num_devices < local_size) {
-            fprintf(stderr,
-                    "ERROR: Number of devices is less numer of PEs \
-                    on the node!\n");
-            MPI_CALL(MPI_Comm_free(&local_comm));
-            MPI_CALL(MPI_Info_free(&info));
-            MPI_CALL(MPI_Finalize());
-            return -1;
-        }
 
         MPI_CALL(MPI_Comm_free(&local_comm));
-        MPI_CALL(MPI_Info_free(&info));
+
+        CUDA_RT_CALL(cudaSetDevice(local_rank));
+        CUDA_RT_CALL(cudaFree(0));
     }
+
+    else {
+        CUDA_RT_CALL(cudaSetDevice(0));
+        CUDA_RT_CALL(cudaFree(0));
+    }
+
     CUDA_RT_CALL(cudaSetDevice(local_rank));
     CUDA_RT_CALL(cudaFree(0));
 
