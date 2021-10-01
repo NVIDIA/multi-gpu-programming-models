@@ -259,6 +259,7 @@ int main(int argc, char* argv[]) {
         NCCL_CALL(ncclSend(a_new + iy_start * nx,     nx, NCCL_REAL_TYPE, top,    nccl_comm, compute_stream));
         NCCL_CALL(ncclGroupEnd());
         CUDA_RT_CALL(cudaStreamSynchronize(compute_stream));
+        std::swap(a_new, a);
     }
     POP_RANGE
 

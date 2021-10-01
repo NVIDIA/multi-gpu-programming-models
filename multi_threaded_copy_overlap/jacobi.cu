@@ -268,7 +268,7 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        for (int i = 0; i < 5; ++i) {
+        for (int i = 0; i < 4; ++i) {
             CUDA_RT_CALL(cudaMemcpyAsync(a_new[top] + (iy_end[top] * nx),
                                          a_new[dev_id] + iy_start * nx, nx * sizeof(real),
                                          cudaMemcpyDeviceToDevice, push_top_stream));
@@ -277,6 +277,7 @@ int main(int argc, char* argv[]) {
                                          push_bottom_stream));
             CUDA_RT_CALL(cudaStreamSynchronize(push_top_stream));
             CUDA_RT_CALL(cudaStreamSynchronize(push_bottom_stream));
+            std::swap(a_new, a);
         }
 
         CUDA_RT_CALL(cudaDeviceSynchronize());

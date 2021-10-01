@@ -227,6 +227,7 @@ int main(int argc, char* argv[]) {
                               MPI_STATUS_IGNORE));
         MPI_CALL(MPI_Sendrecv(a_new + (iy_end - 1) * nx, nx, MPI_REAL_TYPE, bottom, 0, a_new, nx,
                               MPI_REAL_TYPE, top, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE));
+        std::swap(a_new, a);
     }
     POP_RANGE
 
