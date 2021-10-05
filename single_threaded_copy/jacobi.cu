@@ -260,7 +260,7 @@ int main(int argc, char* argv[]) {
         CUDA_RT_CALL(cudaDeviceSynchronize());
     }
 
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < 4; ++i) {
         for (int dev_id = 0; dev_id < num_devices; ++dev_id) {
             CUDA_RT_CALL(cudaSetDevice(dev_id));
             const int top = dev_id > 0 ? dev_id - 1 : (num_devices - 1);
@@ -276,6 +276,9 @@ int main(int argc, char* argv[]) {
             CUDA_RT_CALL(cudaSetDevice(dev_id));
             CUDA_RT_CALL(cudaStreamSynchronize(push_top_stream[dev_id]));
             CUDA_RT_CALL(cudaStreamSynchronize(push_bottom_stream[dev_id]));
+        }
+        for (int dev_id = 0; dev_id < num_devices; ++dev_id) {
+            std::swap(a_new[dev_id], a[dev_id]);
         }
     }
 

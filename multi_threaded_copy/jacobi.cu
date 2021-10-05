@@ -269,7 +269,7 @@ int main(int argc, char* argv[]) {
                                          push_bottom_stream));
             CUDA_RT_CALL(cudaStreamSynchronize(push_top_stream));
             CUDA_RT_CALL(cudaStreamSynchronize(push_bottom_stream));
-            std::swap(a_new, a);
+            std::swap(a_new[dev_id], a);
         }
 
         CUDA_RT_CALL(cudaDeviceSynchronize());
