@@ -124,18 +124,18 @@ const real PI = 2.0 * std::asin(1.0);
 
 /* This kernel implements neighborhood synchronization for Jacobi. It updates
    the neighbor PEs about its arrival and waits for notification from them. */
-__global__ void syncneighborhood_kernel(int my_pe, int num_pes, volatile long* sync_arr,
+__global__ void syncneighborhood_kernel(int my_pe, int num_pes, uint64_t* sync_arr,
                                         long counter) {
     int next_rank = (my_pe + 1) % num_pes;
     int prev_rank = (my_pe == 0) ? num_pes - 1 : my_pe - 1;
     nvshmem_quiet(); /* To ensure all prior nvshmem operations have been completed */
 
     /* Notify neighbors about arrival */
-    nvshmemx_long_signal((long*)sync_arr, counter, next_rank);
-    nvshmemx_long_signal((long*)sync_arr + 1, counter, prev_rank);
+    nvshmemx_signal_op(sync_arr, counter, NVSHMEM_SIGNAL_SET, next_rank);
+    nvshmemx_signal_op(sync_arr + 1, counter, NVSHMEM_SIGNAL_SET, prev_rank);
 
     /* Wait for neighbors notification */
-    nvshmem_long_wait_until_all((long *)sync_arr, 2, NULL, NVSHMEM_CMP_GE, counter);
+    nvshmem_uint64_wait_until_all(sync_arr, 2, NULL, NVSHMEM_CMP_GE, counter);
 }
 
 __global__ void initialize_boundaries(real* __restrict__ const a_new, real* __restrict__ const a,
@@ -424,9 +424,9 @@ int main(int argc, char* argv[]) {
     bool l2_norm_greater_than_tol = true;
 
     /* Used by syncneighborhood kernel */
-    long* sync_arr = NULL;
-    sync_arr = (long*)nvshmem_malloc(2 * sizeof(long));
-    cudaMemsetAsync(sync_arr, 0, 2 * sizeof(long), compute_stream);
+    uint64_t* sync_arr = NULL;
+    sync_arr = (uint64_t*)nvshmem_malloc(2 * sizeof(uint64_t));
+    cudaMemsetAsync(sync_arr, 0, 2 * sizeof(uint64_t), compute_stream);
     cudaStreamSynchronize(compute_stream);
     long synccounter = 1;
 
