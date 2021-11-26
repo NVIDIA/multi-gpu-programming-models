@@ -291,7 +291,7 @@ int main(int argc, char* argv[]) {
     constexpr int dim_block_x = 32;
     constexpr int dim_block_y = 32;
     int iter = 0;
-    bool calculate_norm;
+    bool calculate_norm = true;
     real l2_norm = 1.0;
 
     for (int dev_id = 0; dev_id < num_devices; ++dev_id) {
@@ -483,7 +483,7 @@ double single_gpu(const int nx, const int ny, const int iter_max, real* const a_
     dim3 dim_grid((nx + dim_block_x - 1) / dim_block_x, (ny + dim_block_y - 1) / dim_block_y, 1);
 
     int iter = 0;
-    bool calculate_norm;
+    bool calculate_norm = true;
     real l2_norm = 1.0;
 
     double start = omp_get_wtime();

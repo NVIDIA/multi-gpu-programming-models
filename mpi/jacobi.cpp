@@ -256,8 +256,8 @@ int main(int argc, char* argv[]) {
 
     int iter = 0;
     real l2_norm = 1.0;
-    bool calculate_norm;  // boolean to store whether l2 norm will be calculated in
-                          //   an iteration or not
+    bool calculate_norm = true; // boolean to store whether l2 norm will be calculated in
+                                // an iteration or not
 
     MPI_CALL(MPI_Barrier(MPI_COMM_WORLD));
     double start = MPI_Wtime();
@@ -405,7 +405,7 @@ double single_gpu(const int nx, const int ny, const int iter_max, real* const a_
 
     int iter = 0;
     real l2_norm = 1.0;
-    bool calculate_norm;
+    bool calculate_norm = true;
 
     double start = MPI_Wtime();
     PUSH_RANGE("Jacobi solve", 0)

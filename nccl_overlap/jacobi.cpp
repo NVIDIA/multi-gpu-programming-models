@@ -284,7 +284,7 @@ int main(int argc, char* argv[]) {
     }
 
     int iter = 0;
-    bool calculate_norm;
+    bool calculate_norm = true;
     real l2_norm = 1.0;
 
     MPI_CALL(MPI_Barrier(MPI_COMM_WORLD));
@@ -448,7 +448,7 @@ double single_gpu(const int nx, const int ny, const int iter_max, real* const a_
             iter_max, ny, nx, nccheck);
 
     int iter = 0;
-    bool calculate_norm;
+    bool calculate_norm = true;
     real l2_norm = 1.0;
 
     double start = MPI_Wtime();
