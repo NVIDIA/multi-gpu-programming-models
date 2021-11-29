@@ -22,7 +22,7 @@ Some examples in this repository are the basis for an interactive tutorial: [FZJ
 # Requirements
 * CUDA: verison 11.0 (9.2 if build with `DISABLE_CUB=1`) or later is required by all variants.
 * OpenMP capable compiler: Required by the Multi Threaded variants. The examples have been developed and tested with gcc.
-* CUDA-aware[^1] MPI: Required by the MPI, NVSHMEM and NCCL variants. Only the MPI variants require a CUDA-aware MPI for NVSHMEM and NCCL a non CUDA-aware MPI is sufficient. The examples have been developed and tested with OpenMPI.
+* MPI: The "mpi" and "mpi_overlap" variants require a CUDA-aware[^1] implementation. For NVSHMEM and NCCL, a non CUDA-aware MPI is sufficient. The examples have been developed and tested with OpenMPI.
 * NVSHMEM (version 0.4.1 or later): Required by the NVSHMEM variant.
 * NCCL (version 2.8 or later): Required by the NCCL variant
 
@@ -53,4 +53,4 @@ multi-gpu-programming-models$ cd multi_threaded_copy
 multi_threaded_copy$ clang-format -style=file -i jacobi.cu
 ```
 
-[^1]: A check for CUDA-aware support is done at compile and run time (see [the OpenMPI FAQ](https://www.open-mpi.org/faq/?category=runcuda#mpi-cuda-aware-support) for details). If your CUDA-aware MPI implementaiton does not support this check, which requires `MPIX_CUDA_AWARE_SUPPORT` and `MPIX_Query_cuda_support()` to be defined in `mpi-ext.h`, it can be skipped by setting `SKIP_CUDA_AWARENESS_CHECK=1`.
+[^1]: A check for CUDA-aware support is done at compile and run time (see [the OpenMPI FAQ](https://www.open-mpi.org/faq/?category=runcuda#mpi-cuda-aware-support) for details). If your CUDA-aware MPI implementation does not support this check, which requires `MPIX_CUDA_AWARE_SUPPORT` and `MPIX_Query_cuda_support()` to be defined in `mpi-ext.h`, it can be skipped by setting `SKIP_CUDA_AWARENESS_CHECK=1`.
