@@ -25,6 +25,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #include <cstdio>
+#include <cstdlib>
 
 #ifdef HAVE_CUB
 #include <cub/block/block_reduce.cuh>
@@ -33,12 +34,14 @@
 #define CUDA_RT_CALL(call)                                                                  \
     {                                                                                       \
         cudaError_t cudaStatus = call;                                                      \
-        if (cudaSuccess != cudaStatus)                                                      \
+        if (cudaSuccess != cudaStatus) {                                                    \
             fprintf(stderr,                                                                 \
                     "ERROR: CUDA RT call \"%s\" in line %d of file %s failed "              \
                     "with "                                                                 \
                     "%s (%d).\n",                                                           \
                     #call, __LINE__, __FILE__, cudaGetErrorString(cudaStatus), cudaStatus); \
+            exit( cudaStatus );                                                             \
+        }                                                                                   \
     }
 
 #ifdef USE_DOUBLE

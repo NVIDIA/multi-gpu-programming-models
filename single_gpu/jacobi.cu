@@ -32,6 +32,7 @@
 #include <iostream>
 #include <iterator>
 #include <sstream>
+#include <cstdlib>
 
 #include <omp.h>
 
@@ -68,12 +69,14 @@ const int num_colors = sizeof(colors) / sizeof(uint32_t);
 #define CUDA_RT_CALL(call)                                                                  \
     {                                                                                       \
         cudaError_t cudaStatus = call;                                                      \
-        if (cudaSuccess != cudaStatus)                                                      \
+        if (cudaSuccess != cudaStatus) {                                                    \
             fprintf(stderr,                                                                 \
                     "ERROR: CUDA RT call \"%s\" in line %d of file %s failed "              \
                     "with "                                                                 \
                     "%s (%d).\n",                                                           \
                     #call, __LINE__, __FILE__, cudaGetErrorString(cudaStatus), cudaStatus); \
+            exit( cudaStatus );                                                             \
+        }                                                                                   \
     }
 
 typedef float real;

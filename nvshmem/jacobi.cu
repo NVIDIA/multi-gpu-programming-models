@@ -33,6 +33,7 @@
 #include <cstdio>
 #include <iostream>
 #include <sstream>
+#include <cstdlib>
 
 #ifdef HAVE_CUB
 #include <cub/block/block_reduce.cuh>
@@ -41,7 +42,7 @@
 #define MPI_CALL(call)                                                                \
     {                                                                                 \
         int mpi_status = call;                                                        \
-        if (0 != mpi_status) {                                                        \
+        if (MPI_SUCCESS != mpi_status) {                                              \
             char mpi_error_string[MPI_MAX_ERROR_STRING];                              \
             int mpi_error_string_length = 0;                                          \
             MPI_Error_string(mpi_status, mpi_error_string, &mpi_error_string_length); \
@@ -56,6 +57,7 @@
                         "ERROR: MPI call \"%s\" in line %d of file %s failed "        \
                         "with %d.\n",                                                 \
                         #call, __LINE__, __FILE__, mpi_status);                       \
+            exit( mpi_status );                                                       \
         }                                                                             \
     }
 
@@ -88,12 +90,14 @@ const int num_colors = sizeof(colors) / sizeof(uint32_t);
 #define CUDA_RT_CALL(call)                                                                  \
     {                                                                                       \
         cudaError_t cudaStatus = call;                                                      \
-        if (cudaSuccess != cudaStatus)                                                      \
+        if (cudaSuccess != cudaStatus) {                                                    \
             fprintf(stderr,                                                                 \
                     "ERROR: CUDA RT call \"%s\" in line %d of file %s failed "              \
                     "with "                                                                 \
                     "%s (%d).\n",                                                           \
                     #call, __LINE__, __FILE__, cudaGetErrorString(cudaStatus), cudaStatus); \
+            exit( cudaStatus );                                                             \
+        }                                                                                   \
     }
 
 // convert NVSHMEM_SYMMETRIC_SIZE string to long long unsigned int
