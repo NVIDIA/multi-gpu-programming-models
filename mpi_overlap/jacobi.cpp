@@ -158,6 +158,8 @@ int main(int argc, char* argv[]) {
     MPI_CALL(MPI_Comm_rank(MPI_COMM_WORLD, &rank));
     int size;
     MPI_CALL(MPI_Comm_size(MPI_COMM_WORLD, &size));
+    int num_devices = 0;
+    CUDA_RT_CALL(cudaGetDeviceCount(&num_devices));
 
     const int iter_max = get_argval<int>(argv, argv + argc, "-niter", 1000);
     const int nccheck = get_argval<int>(argv, argv + argc, "-nccheck", 1);
@@ -177,7 +179,7 @@ int main(int argc, char* argv[]) {
         MPI_CALL(MPI_Comm_free(&local_comm));
     }
 
-    CUDA_RT_CALL(cudaSetDevice(local_rank));
+    CUDA_RT_CALL(cudaSetDevice(local_rank%num_devices));
     CUDA_RT_CALL(cudaFree(0));
 
     real* a_ref_h;
