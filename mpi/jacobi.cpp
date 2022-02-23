@@ -147,13 +147,14 @@ bool get_arg(char** begin, char** end, const std::string& arg) {
 }
 
 int main(int argc, char* argv[]) {
+    MPI_CALL(MPI_Init(&argc, &argv));
 #if !defined(SKIP_CUDA_AWARENESS_CHECK) && defined(MPIX_CUDA_AWARE_SUPPORT)
     if (1 != MPIX_Query_cuda_support()) {
         fprintf(stderr, "The used MPI Implementation does not have CUDA-aware support enabled!\n");
+        MPI_CALL(MPI_Finalize());
         return -1;
     }
 #endif
-    MPI_CALL(MPI_Init(&argc, &argv));
     int rank;
     MPI_CALL(MPI_Comm_rank(MPI_COMM_WORLD, &rank));
     int size;
