@@ -169,6 +169,14 @@ int main(int argc, char* argv[]) {
     const bool csv = get_arg(argv, argv + argc, "-csv");
     const bool use_hp_streams = get_arg(argv, argv + argc, "-use_hp_streams");
 
+    if ( nccheck > 1 && !use_hp_streams && 0 == rank )
+    {
+        fprintf(stderr,
+            "WARN: When not calculating the norm in every iteration kernels might be executed in "
+            "an order that breaks communication computation overlap. Also enable -use_hp_streams "
+            "to avoid this issue.\n");
+    }
+
     int local_rank = -1;
     {
         MPI_Comm local_comm;

@@ -43,6 +43,7 @@ All variant have the following command line options
 * `-nx`: Size of the domain in x direction (default 16384)
 * `-ny`: Size of the domain in y direction (default 16384)
 * `-csv`: Print performance results as -csv
+* `-use_hp_streams`: In `mpi_overlap` use high priority streams to hide kernel launch latencies of boundary kernels.
 
 The provided script `bench.sh` contains some examples executing all the benchmarks presented in the GTC 2019 Talk Multi GPU Programming Models.
 
