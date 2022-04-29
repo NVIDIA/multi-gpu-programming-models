@@ -250,7 +250,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     if ( 1 == num_devices ) {
-        // Only 1 device visbile assuming GPU affinity is handled via CUDA_VISIBLE_DEVICES
+        // Only 1 device visible, assuming GPU affinity is handled via CUDA_VISIBLE_DEVICES
         CUDA_RT_CALL(cudaSetDevice(0));
     } else {
         CUDA_RT_CALL(cudaSetDevice(local_rank));
