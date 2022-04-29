@@ -268,13 +268,18 @@ int main(int argc, char* argv[]) {
 
         MPI_CALL(MPI_Comm_free(&local_comm));
     }
-    if ( num_devices < local_size )
+    if ( 1 < num_devices && num_devices < local_size )
     {
         fprintf(stderr,"ERROR Number of visible devices (%d) is less than number of ranks on the node (%d)!\n", num_devices, local_size);
         MPI_CALL(MPI_Finalize());
         return 1;
     }
-    CUDA_RT_CALL(cudaSetDevice(local_rank));
+    if ( 1 == num_devices ) {
+        // Only 1 device visbile assuming GPU affinity is handled via CUDA_VISIBLE_DEVICES
+        CUDA_RT_CALL(cudaSetDevice(0));
+    } else {
+        CUDA_RT_CALL(cudaSetDevice(local_rank));
+    }
     CUDA_RT_CALL(cudaFree(0));
 
     MPI_Comm mpi_comm;
