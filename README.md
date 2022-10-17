@@ -1,17 +1,18 @@
 # Multi GPU Programming Models
 This project implements the well known multi GPU Jacobi solver with different multi GPU Programming Models:
-* `single_threaded_copy`           Single Threaded using cudaMemcpy for inter GPU communication
-* `multi_threaded_copy`            Multi Threaded with OpenMP using cudaMemcpy for inter GPU communication
-* `multi_threaded_copy_overlap`   Multi Threaded with OpenMP using cudaMemcpy for itner GPU communication with overlapping communication
-* `multi_threaded_p2p`             Multi Threaded with OpenMP using GPUDirect P2P mappings for inter GPU communication
-* `multi_threaded_p2p_opt`         Multi Threaded with OpenMP using GPUDirect P2P mappings for inter GPU communication with delayed norm execution
-* `multi_threaded_um`              Multi Threaded with OpenMP relying on transparent peer mappings with Unified Memory for inter GPU communication
-* `mpi`                            Multi Process with MPI using CUDA-aware MPI for inter GPU communication
-* `mpi_overlap`                   Multi Process with MPI using CUDA-aware MPI for inter GPU communication with overlapping communication
-* `nccl`                           Multi Process with MPI and NCCL using NCCL for inter GPU communication
-* `nccl_overlap`                  Multi Process with MPI and NCCL using NCCL for inter GPU communication with overlapping communication
-* `nvshmem`                        Multi Process with MPI and NVSHMEM using NVSHMEM for inter GPU communication. Other approach, `nvshmem_opt`, might be better for portable performance.
-* `nvshmem_opt`                    Multi Process with MPI and NVSHMEM using NVSHMEM for inter GPU communication with NVSHMEM extension API
+* `single_threaded_copy`        Single Threaded using cudaMemcpy for inter GPU communication
+* `multi_threaded_copy`         Multi Threaded with OpenMP using cudaMemcpy for inter GPU communication
+* `multi_threaded_copy_overlap` Multi Threaded with OpenMP using cudaMemcpy for itner GPU communication with overlapping communication
+* `multi_threaded_p2p`          Multi Threaded with OpenMP using GPUDirect P2P mappings for inter GPU communication
+* `multi_threaded_p2p_opt`      Multi Threaded with OpenMP using GPUDirect P2P mappings for inter GPU communication with delayed norm execution
+* `multi_threaded_um`           Multi Threaded with OpenMP relying on transparent peer mappings with Unified Memory for inter GPU communication
+* `mpi`                         Multi Process with MPI using CUDA-aware MPI for inter GPU communication
+* `mpi_overlap`                 Multi Process with MPI using CUDA-aware MPI for inter GPU communication with overlapping communication
+* `nccl`                        Multi Process with MPI and NCCL using NCCL for inter GPU communication
+* `nccl_overlap`                Multi Process with MPI and NCCL using NCCL for inter GPU communication with overlapping communication
+* `nccl_graphs`                 Multi Process with MPI and NCCL using NCCL for inter GPU communication with overlapping communication combined with CUDA Graphs
+* `nvshmem`                     Multi Process with MPI and NVSHMEM using NVSHMEM for inter GPU communication. Other approach, `nvshmem_opt`, might be better for portable performance.
+* `nvshmem_opt`                 Multi Process with MPI and NVSHMEM using NVSHMEM for inter GPU communication with NVSHMEM extension API
 
 Each variant is a stand alone Makefile project and most variants have been discussed in various GTC Talks, e.g.:
 * `single_threaded_copy`, `multi_threaded_copy`, `multi_threaded_copy_overlap`, `multi_threaded_p2p`, `multi_threaded_p2p_opt`, `mpi`, `mpi_overlap` and `nvshmem` on DGX-1V at GTC Europe 2017 in [23031 - Multi GPU Programming Models](http://on-demand-gtc.gputechconf.com/gtc-quicklink/5fwZQzZ)
@@ -20,7 +21,8 @@ Each variant is a stand alone Makefile project and most variants have been discu
 Some examples in this repository are the basis for an interactive tutorial: [FZJ-JSC/tutorial-multi-gpu](https://github.com/FZJ-JSC/tutorial-multi-gpu). 
 
 # Requirements
-* CUDA: verison 11.0 (9.2 if build with `DISABLE_CUB=1`) or later is required by all variants.
+* CUDA: version 11.0 (9.2 if build with `DISABLE_CUB=1`) or later is required by all variants.
+  * `nccl_graphs` requires NCCL 2.15.1, CUDA 11.7 and CUDA Driver 515.65.01 or newer
 * OpenMP capable compiler: Required by the Multi Threaded variants. The examples have been developed and tested with gcc.
 * MPI: The "mpi" and "mpi_overlap" variants require a CUDA-aware[^1] implementation. For NVSHMEM and NCCL, a non CUDA-aware MPI is sufficient. The examples have been developed and tested with OpenMPI.
 * NVSHMEM (version 0.4.1 or later): Required by the NVSHMEM variant.
