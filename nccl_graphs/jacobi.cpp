@@ -161,6 +161,8 @@ int main(int argc, char* argv[]) {
     MPI_CALL(MPI_Comm_rank(MPI_COMM_WORLD, &rank));
     int size;
     MPI_CALL(MPI_Comm_size(MPI_COMM_WORLD, &size));
+    int num_devices = 0;
+    CUDA_RT_CALL(cudaGetDeviceCount(&num_devices));
 
     ncclUniqueId nccl_uid;
     if (rank == 0) NCCL_CALL(ncclGetUniqueId(&nccl_uid));
@@ -173,17 +175,30 @@ int main(int argc, char* argv[]) {
     const bool csv = get_arg(argv, argv + argc, "-csv");
 
     int local_rank = -1;
+    int local_size = 1;
     {
         MPI_Comm local_comm;
         MPI_CALL(MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, rank, MPI_INFO_NULL,
                                      &local_comm));
 
         MPI_CALL(MPI_Comm_rank(local_comm, &local_rank));
+        MPI_CALL(MPI_Comm_size(local_comm, &local_size));
 
         MPI_CALL(MPI_Comm_free(&local_comm));
     }
 
-    CUDA_RT_CALL(cudaSetDevice(local_rank));
+    if ( 1 < num_devices && num_devices < local_size )
+    {
+        fprintf(stderr,"ERROR Number of visible devices (%d) is less than number of ranks on the node (%d)!\n", num_devices, local_size);
+        MPI_CALL(MPI_Finalize());
+        return 1;
+    }
+    if ( 1 == num_devices ) {
+        // Only 1 device visbile assuming GPU affinity is handled via CUDA_VISIBLE_DEVICES
+        CUDA_RT_CALL(cudaSetDevice(0));
+    } else {
+        CUDA_RT_CALL(cudaSetDevice(local_rank));
+    }
     CUDA_RT_CALL(cudaFree(0));
 
     ncclComm_t nccl_comm;
