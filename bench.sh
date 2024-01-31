@@ -33,21 +33,28 @@ NXNY="20480"
 #FIRST_CORE=0
 #MAX_NUM_GPUS=8
 #CUDA_VISIBLE_DEVICES_SETTING=("0" "0" "0,3" "0,3,2" "0,3,2,1" "3,2,1,5,7" "0,3,2,1,5,4" "0,4,7,6,5,1,2" "0,3,2,1,5,6,7,4" )
-#CPU_LIST="0,1,2,3,4,5,6,7"
+#MPI_CPU_BINDING_OPT=("--bind-to" "core" "--map-by" "core")
 
 #DGX-2
 #CPUID=0-23
 #FIRST_CORE=0
 #MAX_NUM_GPUS=16
 #CUDA_VISIBLE_DEVICES_SETTING=("0" "0" "0,1" "0,1,2" "0,1,2,3" "0,1,2,3,4" "0,1,2,3,4,5" "0,1,2,3,4,5,6" "0,1,2,3,4,5,6,7" "0,1,2,3,4,5,6,7,8" "0,1,2,3,4,5,6,7,8,9" "0,1,2,3,4,5,6,7,8,9,10" "0,1,2,3,4,5,6,7,8,9,10,11" "0,1,2,3,4,5,6,7,8,9,10,11,12" "0,1,2,3,4,5,6,7,8,9,10,11,12,13" "0,1,2,3,4,5,6,7,8,9,10,11,12,13,14" "0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15" )
-#CPU_LIST="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15"
+#MPI_CPU_BINDING_OPT=("--bind-to" "core" "--map-by" "core")
 
 #DGX-A100
-CPUID=48-63
-FIRST_CORE=48
+#CPUID=48-63
+#FIRST_CORE=48
+#MAX_NUM_GPUS=8
+#CUDA_VISIBLE_DEVICES_SETTING=("0" "0" "0,1" "0,1,2" "0,1,2,3" "0,1,2,3,4" "0,1,2,3,4,5" "0,1,2,3,4,5,6" "0,1,2,3,4,5,6,7" )
+#MPI_CPU_BINDING_OPT=("--bind-to" "cpu-list:ordered" "--cpu-list" "48,49,50,51,52,53,54,55")
+
+#DGX-H100
+CPUID=0-55
+FIRST_CORE=0
 MAX_NUM_GPUS=8
 CUDA_VISIBLE_DEVICES_SETTING=("0" "0" "0,1" "0,1,2" "0,1,2,3" "0,1,2,3,4" "0,1,2,3,4,5" "0,1,2,3,4,5,6" "0,1,2,3,4,5,6,7" )
-CPU_LIST="48,49,50,51,52,53,54,55"
+MPI_CPU_BINDING_OPT=("--bind-to" "core" "--map-by" "core")
 
 IFS=$'\n'
 function find_best () {
@@ -58,8 +65,6 @@ function find_best () {
     printf '%s\n' "${RESULTS[@]}" | sort -k8 -b -t',' | head -1
     unset RESULTS
 }
-
-#nvidia-smi -ac 1593,1410
 
 #Single GPU
 if true; then
@@ -114,7 +119,7 @@ fi
 export OMP_PROC_BIND=TRUE
 
 #multi threaded copy
-if true; then
+if false; then
 
     NEXT_CORE=${FIRST_CORE}
     OMP_PLACES="{$((NEXT_CORE))}"
@@ -132,7 +137,7 @@ if true; then
 fi
 
 #multi threaded copy overlap
-if true; then
+if false; then
 
     NEXT_CORE=${FIRST_CORE}
     OMP_PLACES="{$((NEXT_CORE))}"
@@ -150,7 +155,7 @@ if true; then
 fi
 
 #multi threaded p2p
-if true; then
+if false; then
 
     NEXT_CORE=${FIRST_CORE}
     OMP_PLACES="{$((NEXT_CORE))}"
@@ -168,7 +173,7 @@ if true; then
 fi
 
 #multi threaded p2p with delayed check
-if true; then
+if false; then
 
     NEXT_CORE=${FIRST_CORE}
     OMP_PLACES="{$((NEXT_CORE))}"
@@ -189,7 +194,7 @@ if true; then
 
     for (( NUM_GPUS=1; NUM_GPUS <= ${MAX_NUM_GPUS}; NUM_GPUS+=1 )); do
         export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES_SETTING[${NUM_GPUS}]}
-        find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --bind-to cpu-list:ordered --cpu-list ${CPU_LIST} ./mpi/jacobi -csv -nx ${NXNY} -ny ${NXNY}
+        find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES "${MPI_CPU_BINDING_OPT[@]}" ./mpi/jacobi -csv -nx ${NXNY} -ny ${NXNY}
     done
 
 fi
@@ -198,7 +203,7 @@ if true; then
 
     for (( NUM_GPUS=1; NUM_GPUS <= ${MAX_NUM_GPUS}; NUM_GPUS+=1 )); do
         export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES_SETTING[${NUM_GPUS}]}
-        find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --bind-to cpu-list:ordered --cpu-list ${CPU_LIST} ./mpi_overlap/jacobi -csv -nx ${NXNY} -ny ${NXNY}
+        find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES "${MPI_CPU_BINDING_OPT[@]}" ./mpi_overlap/jacobi -csv -nx ${NXNY} -ny ${NXNY}
     done
 
 fi
@@ -207,7 +212,7 @@ if true; then
 
     for (( NUM_GPUS=1; NUM_GPUS <= ${MAX_NUM_GPUS}; NUM_GPUS+=1 )); do
         export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES_SETTING[${NUM_GPUS}]}
-        find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --bind-to cpu-list:ordered --cpu-list ${CPU_LIST} ./nccl/jacobi -csv -nx ${NXNY} -ny ${NXNY}
+        find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES "${MPI_CPU_BINDING_OPT[@]}" ./nccl/jacobi -csv -nx ${NXNY} -ny ${NXNY}
     done
 
 fi
@@ -216,7 +221,16 @@ if true; then
 
     for (( NUM_GPUS=1; NUM_GPUS <= ${MAX_NUM_GPUS}; NUM_GPUS+=1 )); do
         export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES_SETTING[${NUM_GPUS}]}
-        find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES --bind-to cpu-list:ordered --cpu-list ${CPU_LIST} ./nccl_overlap/jacobi -csv -nx ${NXNY} -ny ${NXNY}
+        find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES "${MPI_CPU_BINDING_OPT[@]}" ./nccl_overlap/jacobi -csv -nx ${NXNY} -ny ${NXNY}
+    done
+
+fi
+
+if true; then
+
+    for (( NUM_GPUS=1; NUM_GPUS <= ${MAX_NUM_GPUS}; NUM_GPUS+=1 )); do
+        export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES_SETTING[${NUM_GPUS}]}
+        find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES "${MPI_CPU_BINDING_OPT[@]}" ./nccl_graphs/jacobi -csv -nx ${NXNY} -ny ${NXNY}
     done
 
 fi
@@ -226,7 +240,19 @@ if true; then
     export NVSHMEM_SYMMETRIC_SIZE=3690987520
     for (( NUM_GPUS=1; NUM_GPUS <= ${MAX_NUM_GPUS}; NUM_GPUS+=1 )); do
         export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES_SETTING[${NUM_GPUS}]}
-        find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES -x NVSHMEM_SYMMETRIC_SIZE --bind-to cpu-list:ordered --cpu-list ${CPU_LIST} ./nvshmem/jacobi -csv -nx ${NXNY} -ny ${NXNY}
+        find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES -x NVSHMEM_SYMMETRIC_SIZE "${MPI_CPU_BINDING_OPT[@]}" ./nvshmem/jacobi -csv -nx ${NXNY} -ny ${NXNY}
+    done
+
+    export NVSHMEM_SYMMETRIC_SIZE=3690987520
+    for (( NUM_GPUS=1; NUM_GPUS <= ${MAX_NUM_GPUS}; NUM_GPUS+=1 )); do
+        export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES_SETTING[${NUM_GPUS}]}
+        find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES -x NVSHMEM_SYMMETRIC_SIZE "${MPI_CPU_BINDING_OPT[@]}" ./nvshmem/jacobi -csv -neighborhood_sync -nx ${NXNY} -ny ${NXNY}
+    done
+
+    export NVSHMEM_SYMMETRIC_SIZE=3690987520
+    for (( NUM_GPUS=1; NUM_GPUS <= ${MAX_NUM_GPUS}; NUM_GPUS+=1 )); do
+        export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES_SETTING[${NUM_GPUS}]}
+        find_best mpirun ${MPIRUN_ARGS} -np ${NUM_GPUS} -x CUDA_VISIBLE_DEVICES -x NVSHMEM_SYMMETRIC_SIZE "${MPI_CPU_BINDING_OPT[@]}" ./nvshmem/jacobi -csv -neighborhood_sync -norm_overlap -nx ${NXNY} -ny ${NXNY}
     done
 
 fi

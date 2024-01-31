@@ -12,8 +12,9 @@ GENCODE_SM50	:= -gencode arch=compute_50,code=sm_50
 GENCODE_SM52	:= -gencode arch=compute_52,code=sm_52
 GENCODE_SM60    := -gencode arch=compute_60,code=sm_60
 GENCODE_SM70    := -gencode arch=compute_70,code=sm_70
-GENCODE_SM80    := -gencode arch=compute_80,code=sm_80 -gencode arch=compute_80,code=compute_80
-GENCODE_FLAGS	:= $(GENCODE_SM70) $(GENCODE_SM80)
+GENCODE_SM80    := -gencode arch=compute_80,code=sm_80
+GENCODE_SM90    := -gencode arch=compute_90,code=sm_90 -gencode arch=compute_90,code=compute_90
+GENCODE_FLAGS	:= $(GENCODE_SM70) $(GENCODE_SM80) $(GENCODE_SM90)
 ifdef DISABLE_CUB
         NVCC_FLAGS = -Xptxas --optimize-float-atomics
 else
@@ -21,7 +22,7 @@ else
 endif
 NVCC_FLAGS += -lineinfo $(GENCODE_FLAGS) -std=c++14
 MPICXX_FLAGS = -DUSE_NVTX -I$(CUDA_HOME)/include -I$(NCCL_HOME)/include -std=c++14
-LD_FLAGS = -L$(CUDA_HOME)/lib64 -lcudart -lnvToolsExt -lnccl
+LD_FLAGS = -L$(CUDA_HOME)/lib64 -L$(NCCL_HOME)/lib -lcudart -lnvToolsExt -lnccl
 jacobi: Makefile jacobi.cpp jacobi_kernels.o
 	$(MPICXX) $(MPICXX_FLAGS) jacobi.cpp jacobi_kernels.o $(LD_FLAGS) -o jacobi
 
@@ -30,7 +31,7 @@ jacobi_kernels.o: Makefile jacobi_kernels.cu
 
 .PHONY.: clean
 clean:
-	rm -f jacobi jacobi_kernels.o *.qdrep jacobi.*.compute-sanitizer.log
+	rm -f jacobi jacobi_kernels.o *.nsys-rep jacobi.*.compute-sanitizer.log
 
 sanitize: jacobi
 	$(MPIRUN) -np $(NP) compute-sanitizer --log-file jacobi.%q{OMPI_COMM_WORLD_RANK}.compute-sanitizer.log ./jacobi -niter 10

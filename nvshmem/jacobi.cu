@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2018, NVIDIA CORPORATION. All rights reserved.
+/* Copyright (c) 2024 NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -127,6 +127,22 @@ constexpr real tol = 1.0e-8;
 
 const real PI = 2.0 * std::asin(1.0);
 
+/* This kernel implements neighborhood synchronization for Jacobi. It updates
+   the neighbor PEs about its arrival and waits for notification from them. */
+__global__ void syncneighborhood_kernel(int my_pe, int num_pes, uint64_t* sync_arr,
+                                        long counter) {
+    int next_rank = (my_pe + 1) % num_pes;
+    int prev_rank = (my_pe == 0) ? num_pes - 1 : my_pe - 1;
+    nvshmem_quiet(); /* To ensure all prior nvshmem operations have been completed */
+
+    /* Notify neighbors about arrival */
+    nvshmemx_signal_op(sync_arr, counter, NVSHMEM_SIGNAL_SET, next_rank);
+    nvshmemx_signal_op(sync_arr + 1, counter, NVSHMEM_SIGNAL_SET, prev_rank);
+
+    /* Wait for neighbors notification */
+    nvshmem_uint64_wait_until_all(sync_arr, 2, NULL, NVSHMEM_CMP_GE, counter);
+}
+
 __global__ void initialize_boundaries(real* __restrict__ const a_new, real* __restrict__ const a,
                                       const real pi, const int offset, const int nx,
                                       const int my_ny, int ny) {
@@ -158,15 +174,62 @@ __global__ void jacobi_kernel(real* __restrict__ const a_new, const real* __rest
                                      a[(iy + 1) * nx + ix] + a[(iy - 1) * nx + ix]);
         a_new[iy * nx + ix] = new_val;
 
+        real residue = new_val - a[iy * nx + ix];
+        local_l2_norm += residue * residue;
+
         if (iy_start == iy) {
             nvshmem_float_p(a_new + top_iy * nx + ix, new_val, top_pe);
         }
         if ((iy_end - 1) == iy) {
             nvshmem_float_p(a_new + bottom_iy * nx + ix, new_val, bottom_pe);
         }
+    }
+#ifdef HAVE_CUB
+    real block_l2_norm = BlockReduce(temp_storage).Sum(local_l2_norm);
+    if (0 == threadIdx.y && 0 == threadIdx.x) atomicAdd(l2_norm, block_l2_norm);
+#else
+    atomicAdd(l2_norm, local_l2_norm);
+#endif  // HAVE_CUB
+}
+
+template <int BLOCK_DIM_X, int BLOCK_DIM_Y>
+__global__ void jacobi_block_comm_kernel(real* __restrict__ const a_new, const real* __restrict__ const a,
+                              real* __restrict__ const l2_norm, const int iy_start,
+                              const int iy_end, const int nx, const int top_pe, const int top_iy,
+                              const int bottom_pe, const int bottom_iy) {
+#ifdef HAVE_CUB
+    typedef cub::BlockReduce<real, BLOCK_DIM_X, cub::BLOCK_REDUCE_WARP_REDUCTIONS, BLOCK_DIM_Y>
+        BlockReduce;
+    __shared__ typename BlockReduce::TempStorage temp_storage;
+#endif  // HAVE_CUB
+    int iy = blockIdx.y * blockDim.y + threadIdx.y + iy_start;
+    int ix = blockIdx.x * blockDim.x + threadIdx.x + 1;
+    real local_l2_norm = 0.0;
+
+    if (iy < iy_end && ix < (nx - 1)) {
+        const real new_val = 0.25 * (a[iy * nx + ix + 1] + a[iy * nx + ix - 1] +
+                                     a[(iy + 1) * nx + ix] + a[(iy - 1) * nx + ix]);
+        a_new[iy * nx + ix] = new_val;
         real residue = new_val - a[iy * nx + ix];
         local_l2_norm += residue * residue;
     }
+
+    /* starting (x, y) coordinate of the block */
+    int block_iy =
+        iy - threadIdx.y; /* Alternatively, block_iy = blockIdx.y * blockDim.y + iy_start */
+    int block_ix = ix - threadIdx.x; /* Alternatively, block_ix = blockIdx.x * blockDim.x + 1 */
+
+    /* Communicate the boundaries */
+    if ((block_iy <= iy_start) && (iy_start < block_iy + blockDim.y)) {
+        nvshmemx_float_put_nbi_block(a_new + top_iy * nx + block_ix, a_new + iy_start * nx + block_ix,
+                                   min(blockDim.x, nx - 1 - block_ix), top_pe);
+    }
+    if ((block_iy < iy_end) && (iy_end <= block_iy + blockDim.y)) {
+        nvshmemx_float_put_nbi_block(a_new + bottom_iy * nx + block_ix,
+                                   a_new + (iy_end - 1) * nx + block_ix,
+                                   min(blockDim.x, nx - 1 - block_ix), bottom_pe);
+    }
+
 #ifdef HAVE_CUB
     real block_l2_norm = BlockReduce(temp_storage).Sum(local_l2_norm);
     if (0 == threadIdx.y && 0 == threadIdx.x) atomicAdd(l2_norm, block_l2_norm);
@@ -209,6 +272,9 @@ int main(int argc, char* argv[]) {
     const int ny = get_argval<int>(argv, argv + argc, "-ny", 16384);
     const int nccheck = get_argval<int>(argv, argv + argc, "-nccheck", 1);
     const bool csv = get_arg(argv, argv + argc, "-csv");
+    const bool use_block_comm = get_arg(argv, argv + argc, "-use_block_comm");
+    const bool norm_overlap = get_arg(argv, argv + argc, "-norm_overlap");
+    const bool neighborhood_sync = get_arg(argv, argv + argc, "-neighborhood_sync");
 
     if (nccheck != 1) {
         fprintf(stderr, "Only nccheck=1 is supported\n");
@@ -265,7 +331,7 @@ int main(int argc, char* argv[]) {
     // Set symmetric heap size for nvshmem based on problem size
     // Its default value in nvshmem is 1 GB which is not sufficient
     // for large mesh sizes
-    long long unsigned int mesh_size_per_rank = nx * (((ny -2) + size - 1) / size + 2);
+    long long unsigned int mesh_size_per_rank = nx * (((ny - 2) + size - 1) / size + 2);
     long long unsigned int required_symmetric_heap_size =
         2 * mesh_size_per_rank * sizeof(real) *
         1.1;  // Factor 2 is because 2 arrays are allocated - a and a_new
@@ -313,7 +379,7 @@ int main(int argc, char* argv[]) {
     // that each rank gets either (ny - 2) / size or (ny - 2) / size + 1 rows.
     // This optimizes load balancing when (ny - 2) % size != 0
     int chunk_size;
-    int chunk_size_low = (ny -2) / npes;
+    int chunk_size_low = (ny - 2) / npes;
     int chunk_size_high = chunk_size_low + 1;
     // To calculate the number of ranks that need to compute an extra row,
     // the following formula is derived from this equation:
@@ -389,6 +455,10 @@ int main(int argc, char* argv[]) {
     constexpr int dim_block_y = 32;
     dim3 dim_grid((nx + dim_block_x - 1) / dim_block_x,
                   (chunk_size + dim_block_y - 1) / dim_block_y, 1);
+    constexpr int dim_block_block_comm_x = 1024;
+    constexpr int dim_block_block_comm_y = 1;
+    dim3 dim_grid_block_comm((nx + dim_block_block_comm_x - 1) / dim_block_block_comm_x,
+                  (chunk_size + dim_block_block_comm_y - 1) / dim_block_block_comm_y, 1);
 
     int iter = 0;
     if (!mype) {
@@ -397,26 +467,55 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    nvshmem_barrier_all();
+    /* Used by syncneighborhood kernel */
+    uint64_t* sync_arr = NULL;
+    sync_arr = (uint64_t*)nvshmem_malloc(2 * sizeof(uint64_t));
+    cudaMemsetAsync(sync_arr, 0, 2 * sizeof(uint64_t), compute_stream);
+    cudaStreamSynchronize(compute_stream);
+    long synccounter = 1;
+
+    CUDA_RT_CALL(cudaDeviceSynchronize());
+    MPI_CALL(MPI_Barrier(MPI_COMM_WORLD));
 
     double start = MPI_Wtime();
     PUSH_RANGE("Jacobi solve", 0)
     bool l2_norm_greater_than_tol = true;
-
+    
     while (l2_norm_greater_than_tol && iter < iter_max) {
-        // on new iteration: old current vars are now previous vars, old
-        // previous vars are no longer needed
-        int prev = iter % 2;
-        int curr = (iter + 1) % 2;
+        int prev = 0;
+        int curr = 0;
+        if ( norm_overlap ) {
+            // on new iteration: old current vars are now previous vars, old
+            // previous vars are no longer needed
+            prev = iter % 2;
+            curr = (iter + 1) % 2;
+        }
 
         CUDA_RT_CALL(cudaStreamWaitEvent(compute_stream, reset_l2_norm_done[curr], 0));
-        jacobi_kernel<dim_block_x, dim_block_y>
-            <<<dim_grid, {dim_block_x, dim_block_y, 1}, 0, compute_stream>>>(
-                a_new, a, l2_norm_bufs[curr].d, iy_start, iy_end, nx, top_pe, iy_end_top, bottom_pe,
-                iy_start_bottom);
+        if (use_block_comm) {
+            jacobi_block_comm_kernel<dim_block_block_comm_x, dim_block_block_comm_y>
+                <<<dim_grid_block_comm, {dim_block_block_comm_x, dim_block_block_comm_y, 1}, 0, compute_stream>>>(
+                    a_new, a, l2_norm_bufs[curr].d, iy_start, iy_end, nx, top_pe, iy_end_top, bottom_pe,
+                    iy_start_bottom);
+        } else {
+            jacobi_kernel<dim_block_x, dim_block_y>
+                <<<dim_grid, {dim_block_x, dim_block_y, 1}, 0, compute_stream>>>(
+                    a_new, a, l2_norm_bufs[curr].d, iy_start, iy_end, nx, top_pe, iy_end_top, bottom_pe,
+                    iy_start_bottom);
+        }
         CUDA_RT_CALL(cudaGetLastError());
 
-        nvshmemx_barrier_all_on_stream(compute_stream);
+        if ( neighborhood_sync ) {
+            /* Instead of using nvshmemx_barrier_all_on_stream, we are using a custom implementation
+            of barrier that just synchronizes with the neighbor PEs that is the PEs with whom a PE
+            communicates. This will perform faster than a global barrier that would do redundant
+            synchronization for this application. */
+            syncneighborhood_kernel<<<1, 1, 0, compute_stream>>>(mype, npes, sync_arr, synccounter);
+            CUDA_RT_CALL(cudaGetLastError());
+            synccounter++;
+        } else {
+            nvshmemx_barrier_all_on_stream(compute_stream);
+        }
 
         // perform L2 norm calculation
         if ((iter % nccheck) == 0 || (!csv && (iter % 100) == 0)) {
@@ -452,7 +551,7 @@ int main(int argc, char* argv[]) {
     }
 
     CUDA_RT_CALL(cudaDeviceSynchronize());
-    nvshmem_barrier_all();
+    MPI_CALL(MPI_Barrier(MPI_COMM_WORLD));
     double stop = MPI_Wtime();
     POP_RANGE
 
@@ -482,7 +581,14 @@ int main(int argc, char* argv[]) {
 
     if (!mype && result_correct) {
         if (csv) {
-            printf("nvshmem, %d, %d, %d, %d, %d, 1, %f, %f\n", nx, ny, iter_max, nccheck, npes,
+            printf("nvshmem");
+            if (use_block_comm)
+                printf("-use_block_comm");
+            if (norm_overlap)
+                printf("-norm_overlap");
+            if (neighborhood_sync)
+                printf("-neighborhood_sync");
+            printf(", %d, %d, %d, %d, %d, 1, %f, %f\n", nx, ny, iter_max, nccheck, npes,
                    (stop - start), runtime_serial);
         } else {
             printf("Num GPUs: %d.\n", npes);
@@ -502,6 +608,7 @@ int main(int argc, char* argv[]) {
 
     nvshmem_free(a);
     nvshmem_free(a_new);
+    nvshmem_free(sync_arr);
 
     CUDA_RT_CALL(cudaEventDestroy(reset_l2_norm_done[1]));
     CUDA_RT_CALL(cudaEventDestroy(reset_l2_norm_done[0]));

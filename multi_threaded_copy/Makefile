@@ -7,8 +7,9 @@ GENCODE_SM50	:= -gencode arch=compute_50,code=sm_50
 GENCODE_SM52	:= -gencode arch=compute_52,code=sm_52
 GENCODE_SM60    := -gencode arch=compute_60,code=sm_60
 GENCODE_SM70    := -gencode arch=compute_70,code=sm_70
-GENCODE_SM80    := -gencode arch=compute_80,code=sm_80 -gencode arch=compute_80,code=compute_80
-GENCODE_FLAGS	:= $(GENCODE_SM70) $(GENCODE_SM80)
+GENCODE_SM80    := -gencode arch=compute_80,code=sm_80
+GENCODE_SM90    := -gencode arch=compute_90,code=sm_90 -gencode arch=compute_90,code=compute_90
+GENCODE_FLAGS	:= $(GENCODE_SM70) $(GENCODE_SM80) $(GENCODE_SM90)
 ifdef DISABLE_CUB
         NVCC_FLAGS = -Xptxas --optimize-float-atomics
 else
@@ -20,7 +21,7 @@ jacobi: Makefile jacobi.cu
 
 .PHONY.: clean
 clean:
-	rm -f jacobi jacobi.qdrep
+	rm -f jacobi jacobi.nsys-rep
 
 sanitize: jacobi
 	compute-sanitizer ./jacobi -niter 10

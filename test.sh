@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2017,2024, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -25,15 +25,37 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-now=`date +"%Y%m%d%H%M"`
+now=`date +"%Y%m%d%H%M%S"`
 LOG="test-${now}.log"
+
+if [ -v HPCSDK_RELEASE ]; then
+    echo "Running with NVIDIA HPC SDK"
+
+    if [ ! -v CUDA_HOME ] || [ ! -d ${CUDA_HOME} ]; then
+        export CUDA_HOME=$(nvc++ -cuda -printcudaversion |& grep "CUDA Path" | awk -F '=' '{print $2}')
+        echo "Setting CUDA_HOME=${CUDA_HOME}"
+    fi 
+
+    if [ ! -v NCCL_HOME ] || [ ! -d ${NCCL_HOME} ]; then
+        export NCCL_HOME=$(dirname `echo $LD_LIBRARY_PATH | tr ':' '\n' | grep nccl | grep -v sharp`)
+        echo "Setting NCCL_HOME=${NCCL_HOME}"
+    fi 
+
+    if [ ! -v NVSHMEM_HOME ] || [ ! -d ${NVSHMEM_HOME} ]; then
+        export NVSHMEM_HOME=$(dirname `echo $LD_LIBRARY_PATH | tr ':' '\n' | grep nvshmem`)
+        echo "Setting NVSHMEM_HOME=${NVSHMEM_HOME}"
+    fi
+fi
 
 if [ -e ${LOG} ]; then
   echo "ERROR log file ${LOG} already exists."
   exit 1
 fi
 
-CUDA_VISIBLE_DEVICES_SETTING=("0" "0" "0,3" "0,3,2" "0,3,2,1" "3,2,1,5,7" "0,3,2,1,5,4" "0,4,7,6,5,1,2" "0,3,2,1,5,6,7,4" )
+#DGX-1V
+#CUDA_VISIBLE_DEVICES_SETTING=("0" "0" "0,3" "0,3,2" "0,3,2,1" "3,2,1,5,7" "0,3,2,1,5,4" "0,4,7,6,5,1,2" "0,3,2,1,5,6,7,4" )
+#DGX A100 and DGX H100
+CUDA_VISIBLE_DEVICES_SETTING=("0" "0" "0,1" "0,1,2" "0,1,2,3" "0,1,2,3,4" "0,1,2,3,4,5" "0,1,2,3,4,5,6" "0,1,2,3,4,5,6,7" )
 
 errors=0
 
