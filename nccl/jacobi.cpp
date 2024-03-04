@@ -167,6 +167,9 @@ int main(int argc, char* argv[]) {
     ncclUniqueId nccl_uid;
     if (rank == 0) NCCL_CALL(ncclGetUniqueId(&nccl_uid));
     MPI_CALL(MPI_Bcast(&nccl_uid, sizeof(ncclUniqueId), MPI_BYTE, 0, MPI_COMM_WORLD));
+    // MPI_Barrier ensures that all processs have completed the MPI_Bcast.
+    // This can be required when combining MPI with other communication libraries like NCCL.
+    MPI_CALL(MPI_Barrier(MPI_COMM_WORLD));
 
     const int iter_max = get_argval<int>(argv, argv + argc, "-niter", 1000);
     const int nccheck = get_argval<int>(argv, argv + argc, "-nccheck", 1);
