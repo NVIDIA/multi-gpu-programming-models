@@ -12,6 +12,7 @@ This project implements the well known multi GPU Jacobi solver with different mu
 * `nccl_overlap`                Multi Process with MPI and NCCL using NCCL for inter GPU communication with overlapping communication
 * `nccl_graphs`                 Multi Process with MPI and NCCL using NCCL for inter GPU communication with overlapping communication combined with CUDA Graphs
 * `nvshmem`                     Multi Process with MPI and NVSHMEM using NVSHMEM for inter GPU communication.
+* `multi_node_p2p`              Multi Process Multi Node variant using the low level CUDA Driver [Virtual Memory Management](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#virtual-memory-management) and [Multicast Object Management](https://docs.nvidia.com/cuda/cuda-driver-api/group__CUDA__MULTICAST.html#group__CUDA__MULTICAST) APIs. This example is for developers of libraries like NCCL or NVSHMEM. It shows how higher-level programming models like NVSHMEM work internally within a (multinode) NVLINK domain. Application developers generally should use the higher-level MPI, NCCL, or NVSHMEM interfaces instead of this API.
 
 Each variant is a stand alone `Makefile` project and most variants have been discussed in various GTC Talks, e.g.:
 * `single_threaded_copy`, `multi_threaded_copy`, `multi_threaded_copy_overlap`, `multi_threaded_p2p`, `multi_threaded_p2p_opt`, `mpi`, `mpi_overlap` and `nvshmem` on DGX-1V at GTC Europe 2017 in 23031 - Multi GPU Programming Models
@@ -23,8 +24,9 @@ Some examples in this repository are the basis for an interactive tutorial: [FZJ
 # Requirements
 * CUDA: version 11.0 (9.2 if build with `DISABLE_CUB=1`) or later is required by all variants.
   * `nccl_graphs` requires NCCL 2.15.1, CUDA 11.7 and CUDA Driver 515.65.01 or newer
+  * `multi_node_p2p` requires CUDA 12.4, a CUDA Driver 550.54.14 or newer and the NVIDIA IMEX daemon running.
 * OpenMP capable compiler: Required by the Multi Threaded variants. The examples have been developed and tested with gcc.
-* MPI: The `mpi` and `mpi_overlap` variants require a CUDA-aware[^1] implementation. For NVSHMEM and NCCL, a non CUDA-aware MPI is sufficient. The examples have been developed and tested with OpenMPI.
+* MPI: The `mpi` and `mpi_overlap` variants require a CUDA-aware[^1] implementation. For NVSHMEM, NCCL and `multi_node_p2p`, a non CUDA-aware MPI is sufficient. The examples have been developed and tested with OpenMPI.
 * NVSHMEM (version 0.4.1 or later): Required by the NVSHMEM variant.
 * NCCL (version 2.8 or later): Required by the NCCL variant
 
@@ -51,6 +53,9 @@ The `nvshmem` variant additionally provides
 * `-use_block_comm`: Use block cooperative `nvshmemx_float_put_nbi_block` instead of `nvshmem_float_p` for communication.
 * `-norm_overlap`: Enable delayed norm execution as also implemented in `multi_threaded_p2p_opt` 
 * `-neighborhood_sync`: Use custom neighbor only sync instead of `nvshmemx_barrier_all_on_stream`
+
+The `multi_node_p2p` variant additionally provides
+* `-use_mc_red`: Use a device side barrier and allreduce leveraging Multicast Objects instead of MPI primitives
 
 The provided script `bench.sh` contains some examples executing all the benchmarks presented in the GTC Talks referenced above.
 
