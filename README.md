@@ -2,7 +2,7 @@
 This project implements the well known multi GPU Jacobi solver with different multi GPU Programming Models:
 * `single_threaded_copy`        Single Threaded using cudaMemcpy for inter GPU communication
 * `multi_threaded_copy`         Multi Threaded with OpenMP using cudaMemcpy for inter GPU communication
-* `multi_threaded_copy_overlap` Multi Threaded with OpenMP using cudaMemcpy for itner GPU communication with overlapping communication
+* `multi_threaded_copy_overlap` Multi Threaded with OpenMP using cudaMemcpy for inter GPU communication with overlapping communication
 * `multi_threaded_p2p`          Multi Threaded with OpenMP using GPUDirect P2P mappings for inter GPU communication
 * `multi_threaded_p2p_opt`      Multi Threaded with OpenMP using GPUDirect P2P mappings for inter GPU communication with delayed norm execution
 * `multi_threaded_um`           Multi Threaded with OpenMP relying on transparent peer mappings with Unified Memory for inter GPU communication
@@ -41,7 +41,7 @@ jacobi
 ```
 
 # Run instructions
-All variant have the following command line options
+All variants have the following command line options
 * `-niter`: How many iterations to carry out (default 1000)
 * `-nccheck`: How often to check for convergence (default 1)
 * `-nx`: Size of the domain in x direction (default 16384)
