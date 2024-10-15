@@ -57,6 +57,9 @@ The `nvshmem` variant additionally provides
 The `multi_node_p2p` variant additionally provides
 * `-use_mc_red`: Use a device side barrier and allreduce leveraging Multicast Objects instead of MPI primitives
 
+The `nccl` variants additionally provide
+* `-user_buffer_reg`: Avoid extra internal copies in NCCL communication with [User Buffer Registration](https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/usage/bufferreg.html#user-buffer-registration). Required NCCL APIs are available with NCCL 2.19.1 or later. NCCL 2.23.4 added support for the used communication pattern.
+
 The provided script `bench.sh` contains some examples executing all the benchmarks presented in the GTC Talks referenced above.
 
 # Developers guide

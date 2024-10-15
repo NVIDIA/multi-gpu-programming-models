@@ -111,6 +111,9 @@ const int num_colors = sizeof(colors) / sizeof(uint32_t);
         }                                                                                   \
     }
 
+#define NCCL_VERSION_UB NCCL_VERSION(2,19,1)
+#define NCCL_UB_SUPPORT NCCL_VERSION_CODE >= NCCL_VERSION_UB
+
 #ifdef USE_DOUBLE
 typedef double real;
 #define MPI_REAL_TYPE MPI_DOUBLE
@@ -176,6 +179,13 @@ int main(int argc, char* argv[]) {
     const int nx = get_argval<int>(argv, argv + argc, "-nx", 16384);
     const int ny = get_argval<int>(argv, argv + argc, "-ny", 16384);
     const bool csv = get_arg(argv, argv + argc, "-csv");
+    bool user_buffer_reg = get_arg(argv, argv + argc, "-user_buffer_reg");
+#if NCCL_UB_SUPPORT == 0
+    if (user_buffer_reg) {
+        fprintf(stderr,"WARNING: Ignoring -user_buffer_reg, required NCCL APIs are provided by NCCL 2.19.1 or later.\n");
+        user_buffer_reg = false;
+    }
+#endif //NCCL_UB_SUPPORT == 0
 
     int local_rank = -1;
     int local_size = 1;
@@ -237,9 +247,25 @@ int main(int argc, char* argv[]) {
         chunk_size = chunk_size_high;
 
     real* a;
-    CUDA_RT_CALL(cudaMalloc(&a, nx * (chunk_size + 2) * sizeof(real)));
     real* a_new;
-    CUDA_RT_CALL(cudaMalloc(&a_new, nx * (chunk_size + 2) * sizeof(real)));
+#if NCCL_UB_SUPPORT
+    void* a_reg_handle;
+    void* a_new_reg_handle;
+    if (user_buffer_reg) {
+        NCCL_CALL(ncclMemAlloc( (void**) &a    , nx * (chunk_size + 2) * sizeof(real)));
+        NCCL_CALL(ncclMemAlloc( (void**) &a_new, nx * (chunk_size + 2) * sizeof(real)));
+        NCCL_CALL(ncclCommRegister(nccl_comm, a    , nx * (chunk_size + 2) * sizeof(real), &a_reg_handle));
+        NCCL_CALL(ncclCommRegister(nccl_comm, a_new, nx * (chunk_size + 2) * sizeof(real), &a_new_reg_handle));
+        if ( nccl_version < 22304 ) {
+            fprintf(stderr,"WARNING: -user_buffer_reg available, but Jacobi communication pattern needs NCCL 2.23.4 or later.\n");
+        }
+    }
+    else
+#endif //NCCL_UB_SUPPORT
+    {
+        CUDA_RT_CALL(cudaMalloc(&a, nx * (chunk_size + 2) * sizeof(real)));
+        CUDA_RT_CALL(cudaMalloc(&a_new, nx * (chunk_size + 2) * sizeof(real)));
+    }
 
     CUDA_RT_CALL(cudaMemset(a, 0, nx * (chunk_size + 2) * sizeof(real)));
     CUDA_RT_CALL(cudaMemset(a_new, 0, nx * (chunk_size + 2) * sizeof(real)));
@@ -388,8 +414,19 @@ int main(int argc, char* argv[]) {
     CUDA_RT_CALL(cudaFreeHost(l2_norm_h));
     CUDA_RT_CALL(cudaFree(l2_norm_d));
 
-    CUDA_RT_CALL(cudaFree(a_new));
-    CUDA_RT_CALL(cudaFree(a));
+#if NCCL_UB_SUPPORT
+    if (user_buffer_reg) {
+        NCCL_CALL(ncclCommDeregister(nccl_comm, a_new_reg_handle));
+        NCCL_CALL(ncclCommDeregister(nccl_comm, a_reg_handle));
+        NCCL_CALL(ncclMemFree(a_new));
+        NCCL_CALL(ncclMemFree(a));
+    }
+    else
+#endif //NCCL_UB_SUPPORT
+    {
+        CUDA_RT_CALL(cudaFree(a_new));
+        CUDA_RT_CALL(cudaFree(a));
+    }
 
     CUDA_RT_CALL(cudaFreeHost(a_h));
     CUDA_RT_CALL(cudaFreeHost(a_ref_h));
