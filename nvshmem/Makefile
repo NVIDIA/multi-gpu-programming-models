@@ -27,8 +27,18 @@ ifdef DISABLE_CUB
 else
         NVCC_FLAGS = -DHAVE_CUB
 endif
-NVCC_FLAGS += -ccbin=mpic++ -dc -Xcompiler -fopenmp -lineinfo -DUSE_NVTX $(GENCODE_FLAGS) -std=c++14 -I$(NVSHMEM_HOME)/include
-NVCC_LDFLAGS = -ccbin=mpic++ -L$(NVSHMEM_HOME)/lib -lnvshmem -L$(CUDA_HOME)/lib64 -lcuda -lcudart -lnvidia-ml
+
+NVCC_FLAGS += -ccbin=mpic++ -dc -Xcompiler -fopenmp -lineinfo -DUSE_NVTX -lnvToolsExt $(GENCODE_FLAGS) -std=c++14 -I$(NVSHMEM_HOME)/include
+NVCC_LDFLAGS = -ccbin=mpic++ -L$(NVSHMEM_HOME)/lib -lnvshmem -L$(CUDA_HOME)/lib64 -lcuda -lcudart -lnvToolsExt -lnvidia-ml
+
+CUDA_VERSION = $(strip $(shell which $(NVCC) >/dev/null && $(NVCC) --version | grep release | sed 's/.*release //' | sed 's/\,.*//'))
+CUDA_MAJOR = $(shell echo $(CUDA_VERSION) | cut -d "." -f 1)
+CUDA_MINOR = $(shell echo $(CUDA_VERSION) | cut -d "." -f 2)
+ifeq ($(shell test "0$(CUDA_MAJOR)" -eq 12 -a "0$(CUDA_MINOR)" -ge 9 -o "0$(CUDA_MAJOR)" -gt 12; echo $$?),0)
+    NVCC_FLAGS := $(filter-out -lnvToolsExt, $(NVCC_FLAGS))
+    NVCC_LDFLAGS := $(filter-out -lnvToolsExt, $(NVCC_LDFLAGS))
+endif
+
 ifdef USE_LTO
 	NVCC_FLAGS += -maxrregcount=32
 	NVCC_LDFLAGS += -maxrregcount=32 -dlto
