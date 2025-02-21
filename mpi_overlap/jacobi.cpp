@@ -66,7 +66,7 @@ support can't be determined. Define SKIP_CUDA_AWARENESS_CHECK to skip this check
 #include <cuda_runtime.h>
 
 #ifdef USE_NVTX
-#include <nvToolsExt.h>
+#include <nvtx3/nvToolsExt.h>
 
 const uint32_t colors[] = {0x0000ff00, 0x000000ff, 0x00ffff00, 0x00ff00ff,
                            0x0000ffff, 0x00ff0000, 0x00ffffff};

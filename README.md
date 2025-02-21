@@ -35,7 +35,7 @@ Each variant comes with a `Makefile` and can be built by simply issuing `make`, 
 ```sh
 multi-gpu-programming-models$ cd multi_threaded_copy
 multi_threaded_copy$ make
-nvcc -DHAVE_CUB -Xcompiler -fopenmp -lineinfo -DUSE_NVTX -lnvToolsExt -gencode arch=compute_70,code=sm_70 -gencode arch=compute_80,code=sm_80 -gencode arch=compute_90,code=sm_90 -gencode arch=compute_90,code=compute_90 -std=c++14 jacobi.cu -o jacobi
+nvcc -DHAVE_CUB -Xcompiler -fopenmp -lineinfo -DUSE_NVTX -ldl -gencode arch=compute_70,code=sm_70 -gencode arch=compute_80,code=sm_80 -gencode arch=compute_90,code=sm_90 -gencode arch=compute_90,code=compute_90 -std=c++14 jacobi.cu -o jacobi
 multi_threaded_copy$ ls jacobi
 jacobi
 ```

@@ -15,7 +15,7 @@ ifdef DISABLE_CUB
 else
         NVCC_FLAGS = -DHAVE_CUB
 endif
-NVCC_FLAGS += -Xcompiler -fopenmp -lineinfo -DUSE_NVTX -lnvToolsExt $(GENCODE_FLAGS) -std=c++14
+NVCC_FLAGS += -Xcompiler -fopenmp -lineinfo -DUSE_NVTX -ldl $(GENCODE_FLAGS) -std=c++14
 jacobi: Makefile jacobi.cu
 	$(NVCC) $(NVCC_FLAGS) jacobi.cu -o jacobi
 
