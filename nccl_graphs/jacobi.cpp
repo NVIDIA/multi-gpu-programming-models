@@ -258,8 +258,6 @@ int main(int argc, char* argv[]) {
     real* a;
     real* a_new;
 #if NCCL_UB_SUPPORT
-    void* a_reg_handle;
-    void* a_new_reg_handle;
     if (user_buffer_reg) {
         NCCL_CALL(ncclMemAlloc( (void**) &a    , nx * (chunk_size + 2) * sizeof(real)));
         NCCL_CALL(ncclMemAlloc( (void**) &a_new, nx * (chunk_size + 2) * sizeof(real)));
@@ -498,8 +496,6 @@ int main(int argc, char* argv[]) {
 
 #if NCCL_UB_SUPPORT
     if (user_buffer_reg) {
-        NCCL_CALL(ncclCommDeregister(nccl_comm, a_new_reg_handle));
-        NCCL_CALL(ncclCommDeregister(nccl_comm, a_reg_handle));
         NCCL_CALL(ncclMemFree(a_new));
         NCCL_CALL(ncclMemFree(a));
     }
