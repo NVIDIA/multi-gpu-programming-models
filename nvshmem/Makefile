@@ -21,13 +21,16 @@ ifdef USE_LTO
 	GENCODE_SM90 += -gencode arch=compute_90,code=lto_90
 endif
 GENCODE_FLAGS	:= $(GENCODE_SM70) $(GENCODE_SM80) $(GENCODE_SM90)
+ifdef BUILD_SM_ARCH
+	GENCODE_FLAGS	:= ${GENCODE_SM${BUILD_SM_ARCH}}
+endif
 
 ifdef DISABLE_CUB
         NVCC_FLAGS = -Xptxas --optimize-float-atomics
 else
         NVCC_FLAGS = -DHAVE_CUB
 endif
-NVCC_FLAGS += -ccbin=mpic++ -dc -Xcompiler -fopenmp -lineinfo -DUSE_NVTX -ldl $(GENCODE_FLAGS) -std=c++14 -I$(NVSHMEM_HOME)/include
+NVCC_FLAGS += -ccbin=mpic++ -dc -Xcompiler -fopenmp -lineinfo -DUSE_NVTX -ldl $(GENCODE_FLAGS) -std=c++17 -I$(NVSHMEM_HOME)/include
 NVCC_LDFLAGS = -ccbin=mpic++ -L$(NVSHMEM_HOME)/lib -lnvshmem -L$(CUDA_HOME)/lib64 -lcuda -lcudart -ldl -lnvidia-ml
 ifdef USE_LTO
 	NVCC_FLAGS += -maxrregcount=32
