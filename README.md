@@ -42,8 +42,8 @@ jacobi
 
 To only build for a single SM architecture set `BUILD_SM_ARCH`, e.g.
 ```sh
-multi-gpu-programming-models/single_gpu$ export BUILD_SM_ARCH=90
-multi-gpu-programming-models/single_gpu$ make
+multi-gpu-programming-models/multi_threaded_copy$ export BUILD_SM_ARCH=90
+multi-gpu-programming-models/multi_threaded_copy$ make
 nvcc -DHAVE_CUB -Xcompiler -fopenmp -lineinfo -DUSE_NVTX -ldl -gencode arch=compute_90,code=sm_90 -gencode arch=compute_90,code=compute_90 -std=c++14 jacobi.cu -o jacobi
 ```
 Currently supported values for `BUILD_SM_ARCH` are `30`, `35`, `37`, `50`, `52`, `60`, `70`, `80`, `90`.
