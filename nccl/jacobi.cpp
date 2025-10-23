@@ -113,6 +113,8 @@ const int num_colors = sizeof(colors) / sizeof(uint32_t);
 
 #define NCCL_VERSION_UB NCCL_VERSION(2,19,1)
 #define NCCL_UB_SUPPORT NCCL_VERSION_CODE >= NCCL_VERSION_UB
+#define NCCL_VERSION_SYMMETRIC_MEMORY NCCL_VERSION(2,27,0)
+#define NCCL_SYMMETRIC_MEMEMORY_SUPPORT NCCL_VERSION_CODE >= NCCL_VERSION_SYMMETRIC_MEMORY
 
 #ifdef USE_DOUBLE
 typedef double real;
@@ -180,6 +182,13 @@ int main(int argc, char* argv[]) {
     const int ny = get_argval<int>(argv, argv + argc, "-ny", 16384);
     const bool csv = get_arg(argv, argv + argc, "-csv");
     bool user_buffer_reg = get_arg(argv, argv + argc, "-user_buffer_reg");
+    bool symmetric_memory_reg = get_arg(argv, argv + argc, "-symmetric_memory_reg");
+#if NCCL_SYMMETRIC_MEMEMORY_SUPPORT == 0
+    if (symmetric_memory_reg) {
+        fprintf(stderr,"WARNING: Ignoring -symmetric_memory_reg, required NCCL APIs are provided by NCCL 2.27.0 or later.\n");
+        symmetric_memory_reg = false;
+    }
+#endif // NCCL_SYMMETRIC_MEMEMORY_SUPPORT == 0
 #if NCCL_UB_SUPPORT == 0
     if (user_buffer_reg) {
         fprintf(stderr,"WARNING: Ignoring -user_buffer_reg, required NCCL APIs are provided by NCCL 2.19.1 or later.\n");
@@ -249,8 +258,16 @@ int main(int argc, char* argv[]) {
     real* a;
     real* a_new;
 #if NCCL_UB_SUPPORT
-    void* a_reg_handle;
-    void* a_new_reg_handle;
+    void* a_reg_handle = nullptr;
+    void* a_new_reg_handle = nullptr;
+#if NCCL_SYMMETRIC_MEMEMORY_SUPPORT
+    if (symmetric_memory_reg) {
+        NCCL_CALL(ncclMemAlloc( (void**) &a    , nx * (chunk_size + 2) * sizeof(real)));
+        NCCL_CALL(ncclMemAlloc( (void**) &a_new, nx * (chunk_size + 2) * sizeof(real)));
+        NCCL_CALL(ncclCommWindowRegister(nccl_comm, a    , nx * (chunk_size + 2) * sizeof(real), (ncclWindow_t*)&a_reg_handle, NCCL_WIN_COLL_SYMMETRIC));
+        NCCL_CALL(ncclCommWindowRegister(nccl_comm, a_new, nx * (chunk_size + 2) * sizeof(real), (ncclWindow_t*)&a_new_reg_handle, NCCL_WIN_COLL_SYMMETRIC));
+    } else
+#endif // NCCL_SYMMETRIC_MEMEMORY_SUPPORT
     if (user_buffer_reg) {
         NCCL_CALL(ncclMemAlloc( (void**) &a    , nx * (chunk_size + 2) * sizeof(real)));
         NCCL_CALL(ncclMemAlloc( (void**) &a_new, nx * (chunk_size + 2) * sizeof(real)));
@@ -259,9 +276,8 @@ int main(int argc, char* argv[]) {
         if ( nccl_version < 22304 ) {
             fprintf(stderr,"WARNING: -user_buffer_reg available, but Jacobi communication pattern needs NCCL 2.23.4 or later.\n");
         }
-    }
-    else
-#endif //NCCL_UB_SUPPORT
+    } else
+#endif // NCCL_UB_SUPPORT
     {
         CUDA_RT_CALL(cudaMalloc(&a, nx * (chunk_size + 2) * sizeof(real)));
         CUDA_RT_CALL(cudaMalloc(&a_new, nx * (chunk_size + 2) * sizeof(real)));
@@ -415,13 +431,20 @@ int main(int argc, char* argv[]) {
     CUDA_RT_CALL(cudaFree(l2_norm_d));
 
 #if NCCL_UB_SUPPORT
+#if NCCL_SYMMETRIC_MEMEMORY_SUPPORT
+    if (symmetric_memory_reg) {
+        NCCL_CALL(ncclCommWindowDeregister(nccl_comm, (ncclWindow_t)a_new_reg_handle));
+        NCCL_CALL(ncclCommWindowDeregister(nccl_comm, (ncclWindow_t)a_reg_handle));
+        NCCL_CALL(ncclMemFree(a_new));
+        NCCL_CALL(ncclMemFree(a));
+    } else
+#endif // NCCL_SYMMETRIC_MEMEMORY_SUPPORT
     if (user_buffer_reg) {
         NCCL_CALL(ncclCommDeregister(nccl_comm, a_new_reg_handle));
         NCCL_CALL(ncclCommDeregister(nccl_comm, a_reg_handle));
         NCCL_CALL(ncclMemFree(a_new));
         NCCL_CALL(ncclMemFree(a));
-    }
-    else
+    } else
 #endif //NCCL_UB_SUPPORT
     {
         CUDA_RT_CALL(cudaFree(a_new));
