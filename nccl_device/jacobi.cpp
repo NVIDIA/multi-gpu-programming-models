@@ -238,9 +238,8 @@ int main(int argc, char* argv[]) {
 
     ncclDevComm nccl_dev_comm;
     {
-        if (force_gin && NCCL_GIN_TYPE_NONE == nccl_props.ginConnectionType) {
+        if (force_gin && NCCL_GIN_CONNECTION_NONE == nccl_props.ginConnectionType) {
             fprintf(stderr,"ERROR -force_gin requires GIN support, which is not available.\n");
-            NCCL_CALL(ncclDevCommDestroy(nccl_comm, &nccl_dev_comm));
             NCCL_CALL(ncclCommDestroy(nccl_comm));
             MPI_CALL(MPI_Finalize());
             return 1;
