@@ -237,15 +237,20 @@ int main(int argc, char* argv[]) {
 
     ncclDevComm nccl_dev_comm;
     {
-        if (NCCL_GIN_CONNECTION_FULL != nccl_props.ginConnectionType) {
-            fprintf(stderr, "ERROR NCCL barrier sessions require full GIN support.\n");
+        const bool gin = force_gin || ncclTeamLsa(nccl_comm).nRanks != size;
+        if (gin && NCCL_GIN_CONNECTION_FULL != nccl_props.ginConnectionType) {
+            fprintf(stderr, "ERROR GIN synchronization requires full GIN support.\n");
             NCCL_CALL(ncclCommDestroy(nccl_comm));
             MPI_CALL(MPI_Finalize());
             return 1;
         }
         ncclDevCommRequirements_t reqs = NCCL_DEV_COMM_REQUIREMENTS_INITIALIZER;
-        reqs.barrierCount = 1;
-        reqs.ginConnectionType = NCCL_GIN_CONNECTION_FULL;
+        if (gin) {
+            reqs.barrierCount = 1;
+            reqs.ginConnectionType = NCCL_GIN_CONNECTION_FULL;
+        } else {
+            reqs.lsaBarrierCount = 1;
+        }
         NCCL_CALL(ncclDevCommCreate(nccl_comm, &reqs, &nccl_dev_comm));
     }
 

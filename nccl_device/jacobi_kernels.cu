@@ -205,11 +205,14 @@ __global__ void jacobi_block_comm_kernel(real* __restrict__ const a_new, const r
 // Completes the halo exchange and protects the input rows reused by the next iteration.
 template <bool USE_GIN>
 __global__ void syncneighborhood_kernel(const __grid_constant__ ncclDevComm devComm) {
-    auto bar = USE_GIN
-                   ? ncclBarrierSession<ncclCoopCta>(ncclCoopCta(), ncclTeamTagWorld(),
-                                                  ncclGin(devComm, 0), 0)
-                   : ncclBarrierSession<ncclCoopCta>(ncclCoopCta(), ncclTeamTagLsa(), devComm, 0);
-    bar.sync(ncclCoopCta(), cuda::memory_order_acq_rel, ncclGinFenceLevel::Put);
+    if constexpr (USE_GIN) {
+        ncclBarrierSession<ncclCoopCta> bar(ncclCoopCta(), ncclTeamTagWorld(),
+                                          ncclGin(devComm, 0), 0);
+        bar.sync(ncclCoopCta(), cuda::memory_order_acq_rel, ncclGinFenceLevel::Put);
+    } else {
+        ncclLsaBarrierSession<ncclCoopCta> bar(ncclCoopCta(), devComm, ncclTeamTagLsa(), 0);
+        bar.sync(ncclCoopCta(), cuda::memory_order_acq_rel);
+    }
 }
 
 bool use_gin_for_peer(const ncclComm_t comm, const int peer,
