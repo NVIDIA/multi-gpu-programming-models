@@ -142,9 +142,8 @@ void launch_jacobi_block_comm_kernel(real* __restrict__ const a_new, const real*
                           const int bottom_rank, const int bottom_iy, const bool force_gin,
                           cudaStream_t stream);
 
-void launch_syncneighborhood_kernel(const ncclDevComm& devComm, const ncclComm_t comm, const int top_rank,
-                                    const int bottom_rank, const bool force_gin,
-                                    cudaStream_t stream);
+void launch_syncneighborhood_kernel(const ncclDevComm& devComm, const ncclComm_t comm,
+                                    const bool force_gin, cudaStream_t stream);
 
 double single_gpu(const int nx, const int ny, const int iter_max, real* const a_ref_h,
                   const int nccheck, const bool print);
@@ -221,8 +220,8 @@ int main(int argc, char* argv[]) {
     NCCL_CALL(ncclCommInitRank(&nccl_comm, size, nccl_uid, rank));
     int nccl_version = 0;
     NCCL_CALL(ncclGetVersion(&nccl_version));
-    if ( nccl_version < 22800 ) {
-        fprintf(stderr,"ERROR NCCL 2.28 or newer is required.\n");
+    if (nccl_version < 23100) {
+        fprintf(stderr, "ERROR NCCL 2.31 or newer is required.\n");
         NCCL_CALL(ncclCommDestroy(nccl_comm));
         MPI_CALL(MPI_Finalize());
         return 1;
@@ -238,18 +237,15 @@ int main(int argc, char* argv[]) {
 
     ncclDevComm nccl_dev_comm;
     {
-        if (force_gin && NCCL_GIN_CONNECTION_NONE == nccl_props.ginConnectionType) {
-            fprintf(stderr,"ERROR -force_gin requires GIN support, which is not available.\n");
+        if (NCCL_GIN_CONNECTION_FULL != nccl_props.ginConnectionType) {
+            fprintf(stderr, "ERROR NCCL barrier sessions require full GIN support.\n");
             NCCL_CALL(ncclCommDestroy(nccl_comm));
             MPI_CALL(MPI_Finalize());
             return 1;
         }
         ncclDevCommRequirements_t reqs = NCCL_DEV_COMM_REQUIREMENTS_INITIALIZER;
-        reqs.lsaBarrierCount = 1;
-        if (NCCL_GIN_CONNECTION_FULL == nccl_props.ginConnectionType) {
-            reqs.ginSignalCount = 1;
-            reqs.ginConnectionType = NCCL_GIN_CONNECTION_FULL;
-        }
+        reqs.barrierCount = 1;
+        reqs.ginConnectionType = NCCL_GIN_CONNECTION_FULL;
         NCCL_CALL(ncclDevCommCreate(nccl_comm, &reqs, &nccl_dev_comm));
     }
 
@@ -326,7 +322,7 @@ int main(int argc, char* argv[]) {
 
     PUSH_RANGE("NCCL_Warmup", 5)
     for (int i = 0; i < 10; ++i) {
-        launch_syncneighborhood_kernel(nccl_dev_comm, nccl_comm, top, bottom, force_gin, compute_stream);
+        launch_syncneighborhood_kernel(nccl_dev_comm, nccl_comm, force_gin, compute_stream);
     }
     CUDA_RT_CALL(cudaStreamSynchronize(compute_stream));
     POP_RANGE
@@ -365,7 +361,7 @@ int main(int argc, char* argv[]) {
         }
 
         PUSH_RANGE("NCCL_SYNC", 5)
-        launch_syncneighborhood_kernel(nccl_dev_comm, nccl_comm, top, bottom, force_gin, compute_stream);
+        launch_syncneighborhood_kernel(nccl_dev_comm, nccl_comm, force_gin, compute_stream);
         POP_RANGE
 
         if (calculate_norm) {

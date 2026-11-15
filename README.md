@@ -30,7 +30,7 @@ Some examples in this repository are the basis for an interactive tutorial: [FZJ
 * MPI: The `mpi` and `mpi_overlap` variants require a CUDA-aware[^1] implementation. For NVSHMEM, NCCL and `multi_node_p2p`, a non CUDA-aware MPI is sufficient. The examples have been developed and tested with OpenMPI.
 * NVSHMEM (version 0.4.1 or later): Required by the NVSHMEM variant.
 * NCCL (version 2.8 or later): Required by the NCCL variant
-  * `nccl_device` requires NCCL 2.31 or later with device API support. GIN additionally requires a supported network.
+  * `nccl_device` requires NCCL 2.31 or later with device API and full GIN support on a supported network, including for barrier resource creation in LSA-only runs.
 
 # Building 
 Each variant comes with a `Makefile` and can be built by simply issuing `make`, e.g. 
@@ -72,6 +72,10 @@ The `nccl` variants additionally provide
 
 The `nccl_device` variant does not support `-user_buffer_reg` (its buffers are always registered as symmetric windows) and additionally provides
 * `-force_gin`: Use GIN for all neighbors, even if they are reachable through the LSA domain.
+
+The `nccl_device` variant synchronizes with `ncclBarrierSession` and Put fencing, using the LSA
+team when all ranks share an LSA domain and the world team otherwise. `-force_gin` also selects
+the world team.
 
 The provided script `bench.sh` contains some examples executing all the benchmarks presented in the GTC Talks referenced above.
 
