@@ -202,32 +202,16 @@ __global__ void jacobi_block_comm_kernel(real* __restrict__ const a_new, const r
     }
 }
 
-// Replaces the stream ordering the NCCL variant gets from ncclGroupEnd and corresponds to
-// syncneighborhood_kernel of the NVSHMEM variant: afterwards the halo rows written by
-// jacobi_block_comm_kernel have arrived and the neighbors are done reading the rows that are
-// overwritten next. LSA peers sync with a barrier of the LSA team, GIN peers with signals.
+// Completes the halo exchange and protects the input rows reused by the next iteration.
 template <bool USE_GIN>
-__global__ void syncneighborhood_kernel(const __grid_constant__ ncclDevComm devComm,
-                                        const int top_rank, const int bottom_rank,
-                                        const bool force_gin) {
-    if (!force_gin) {
+__global__ void syncneighborhood_kernel(const __grid_constant__ ncclDevComm devComm) {
+    if constexpr (USE_GIN) {
+        ncclBarrierSession<ncclCoopCta> bar(ncclCoopCta(), ncclTeamTagWorld(),
+                                          ncclGin(devComm, 0), 0);
+        bar.sync(ncclCoopCta(), cuda::memory_order_acq_rel, ncclGinFenceLevel::Put);
+    } else {
         ncclLsaBarrierSession<ncclCoopCta> bar(ncclCoopCta(), devComm, ncclTeamTagLsa(), 0);
         bar.sync(ncclCoopCta(), cuda::memory_order_acq_rel);
-    }
-    if (USE_GIN) {
-        ncclGin gin(devComm, 0);
-        if (0 == threadIdx.x) {
-            // A signal arrives after all prior puts on the same GIN context to the same peer.
-            int num_signals = 0;
-            for (const int peer : {top_rank, bottom_rank}) {
-                if (use_gin_for_peer(devComm, peer, force_gin)) {
-                    gin.signal(ncclTeamWorld(devComm), peer, ncclGin_SignalInc{0});
-                    ++num_signals;
-                }
-            }
-            // Wait for the same number of signals from the neighbors.
-            gin.waitSignal(ncclCoopThread(), 0, num_signals);
-        }
     }
 }
 
@@ -263,12 +247,10 @@ void launch_jacobi_block_comm_kernel(real* __restrict__ const a_new, const real*
     CUDA_RT_CALL(cudaGetLastError());
 }
 
-void launch_syncneighborhood_kernel(const ncclDevComm& devComm, const ncclComm_t comm, const int top_rank,
-                                    const int bottom_rank, const bool force_gin,
-                                    cudaStream_t stream) {
-    auto kernel = use_gin(comm, top_rank, bottom_rank, force_gin)
-                      ? syncneighborhood_kernel<true>
-                      : syncneighborhood_kernel<false>;
-    kernel<<<1, 32, 0, stream>>>(devComm, top_rank, bottom_rank, force_gin);
+void launch_syncneighborhood_kernel(const ncclDevComm& devComm, const ncclComm_t comm,
+                                    const bool force_gin, cudaStream_t stream) {
+    const bool gin = force_gin || ncclTeamLsa(comm).nRanks != ncclTeamWorld(comm).nRanks;
+    auto kernel = gin ? syncneighborhood_kernel<true> : syncneighborhood_kernel<false>;
+    kernel<<<1, 32, 0, stream>>>(devComm);
     CUDA_RT_CALL(cudaGetLastError());
 }

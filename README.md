@@ -73,6 +73,9 @@ The `nccl` variants additionally provide
 The `nccl_device` variant does not support `-user_buffer_reg` (its buffers are always registered as symmetric windows) and additionally provides
 * `-force_gin`: Use GIN for all neighbors, even if they are reachable through the LSA domain.
 
+The `nccl_device` variant uses an LSA barrier when all ranks share an LSA domain; otherwise,
+or with `-force_gin`, it uses a world-team `ncclBarrierSession` with Put fencing.
+
 The provided script `bench.sh` contains some examples executing all the benchmarks presented in the GTC Talks referenced above.
 
 # Developers guide
